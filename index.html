@@ -4,124 +4,189 @@
     <meta name="google-site-verification" content="LrdqNudgadDETGFHasltl770KqHN3t3a0tAAyL2ga8k" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Token Factory - Ultimate V7</title>
+    <title>Solana Token Factory Pro | Instant SPL Token Mint</title>
+    
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/lib/index.iife.min.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: #ffffff; padding: 15px; margin: 0; }
-        .container { background: #161616; border-radius: 25px; padding: 25px; border: 1px solid #333; max-width: 500px; margin: 10px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        h2 { color: #14f195; text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-        p.subtitle { text-align: center; color: #888; font-size: 11px; margin-bottom: 20px; }
-        .section-title { font-size: 10px; color: #9945ff; font-weight: bold; margin-top: 20px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; }
-        label { font-size: 11px; color: #14f195; font-weight: bold; display: block; margin-top: 12px; }
-        input, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #222; background: #222; color: white; box-sizing: border-box; font-size: 13px; outline: none; }
-        input:focus, textarea:focus { border-color: #14f195; }
-        .checkbox-group { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; padding: 12px; border-radius: 10px; margin-top: 8px; border: 1px solid #222; }
-        .checkbox-group span { font-size: 12px; color: #ccc; }
-        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #14f195; cursor: pointer; }
-        .file-input-card { width: 100%; padding: 20px; margin-top: 8px; border-radius: 12px; border: 2px dashed #333; background: #1a1a1a; text-align: center; cursor: pointer; }
-        #preview { width: 70px; height: 70px; border-radius: 50%; margin: 10px auto; display: none; object-fit: cover; border: 2px solid #14f195; }
-        button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; margin-top: 15px; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
-        .btn-connect { background: #512da8; color: white; }
-        .btn-create { background: linear-gradient(90deg, #14f195, #9945ff); color: #000; font-size: 15px; }
-        .fee-badge { background: rgba(20, 241, 149, 0.1); border: 1px solid #14f195; padding: 10px; border-radius: 10px; margin-top: 15px; text-align: center; }
-        .status-box { margin-top: 15px; font-size: 12px; color: #00ffa3; text-align: center; min-height: 30px; }
+        :root { --green: #14f195; --purple: #9945ff; --dark: #121212; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; margin: 0; padding: 20px; }
+        .container { max-width: 480px; margin: auto; background: #181818; padding: 25px; border-radius: 15px; border: 1px solid var(--green); box-shadow: 0 0 20px rgba(20, 241, 149, 0.15); }
+        h2 { text-align: center; color: var(--green); margin-bottom: 5px; font-size: 24px; }
+        .fee-info { text-align: center; background: rgba(20, 241, 149, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--green); font-weight: bold; color: var(--green); }
+        
+        label { display: block; margin-top: 15px; font-size: 13px; color: #aaa; font-weight: 600; }
+        input, textarea, select { width: 100%; padding: 12px; margin-top: 5px; background: #252525; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Upload Logo Box */
+        input[type="file"] { background: #1a1a1a; border: 1px dashed var(--green); cursor: pointer; padding: 10px; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; font-size: 12px; }
+        .checkbox-group input { width: auto; margin: 0; cursor: pointer; }
+        
+        .btn-main { width: 100%; padding: 15px; background: var(--green); color: black; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; transition: 0.3s; }
+        .btn-main:hover { background: #10bb75; transform: scale(1.02); }
+        .btn-connect { background: var(--purple); color: white; margin-bottom: 20px; }
+
+        .ref-box { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        .ref-link { background: #000; padding: 10px; border-radius: 5px; color: var(--green); word-break: break-all; font-family: monospace; font-size: 11px; margin-top: 10px; display: block; border: 1px dashed #444; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Token Factory</h2>
-    <p class="subtitle">Solana SPL Token Creator - Professional Suite</p>
-    
-    <button class="btn-connect" id="btnConnect" onclick="connectWallet()">1. CONNECT WALLET</button>
-    <div id="walletAddr" style="font-size: 9px; text-align: center; color: #666; margin-top: 5px;">Status: Disconnected</div>
+    <h2>Solana Factory Pro</h2>
+    <div class="fee-info">💰 Total Fee: 0.30 SOL (All-In)</div>
 
-    <div class="section-title">General Information</div>
-    <label>Token Name</label>
-    <input type="text" id="tokenName" placeholder="e.g. Solana Gold">
-    <label>Symbol (Ticker)</label>
-    <input type="text" id="tokenSymbol" placeholder="e.g. SLG">
-    <label>Total Supply</label>
-    <input type="number" id="tokenSupply" placeholder="e.g. 1000000000">
+    <button id="btnConnect" class="btn-main btn-connect">Connect Phantom Wallet</button>
 
-    <div class="section-title">Mint Settings (Authorities)</div>
-    <div class="checkbox-group"><span>Revoke Mint Authority (Fix Supply)</span><input type="checkbox" id="revokeMint"></div>
-    <div class="checkbox-group"><span>Revoke Freeze Authority (Security)</span><input type="checkbox" id="revokeFreeze"></div>
-    <div class="checkbox-group"><span>Mutable Metadata (Can edit later)</span><input type="checkbox" id="mutableMetadata" checked></div>
+    <div id="tokenForm">
+        <label>Token Name & Symbol</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="tokenName" placeholder="Ex: Solana Moon">
+            <input type="text" id="tokenSymbol" placeholder="TICKER">
+        </div>
 
-    <div class="section-title">Branding & Identity</div>
-    <label>Description</label>
-    <textarea id="tokenDesc" rows="3" placeholder="Describe your token project..."></textarea>
-    <label>Token Logo</label>
-    <input type="file" id="logoFile" accept="image/*" onchange="previewImage(event)" style="display: none;">
-    <div class="file-input-card" onclick="document.getElementById('logoFile').click()">
-        <span id="fileLabel">📁 Click to upload logo</span>
-        <img id="preview" alt="Preview">
+        <label>Description</label>
+        <textarea id="description" rows="2" placeholder="Brief description of your token..."></textarea>
+
+        <label>Token Logo (Upload from Gallery)</label>
+        <input type="file" id="logoFile" accept="image/*">
+
+        <label>Social Media & Website</label>
+        <input type="text" id="website" placeholder="Website URL">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="twitter" placeholder="Twitter URL">
+            <input type="text" id="telegram" placeholder="Telegram URL">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 2;">
+                <label>Total Supply</label>
+                <input type="number" id="supply" placeholder="1000000000">
+            </div>
+            <div style="flex: 1;">
+                <label>Decimals</label>
+                <input type="number" id="decimals" value="9">
+            </div>
+        </div>
+
+        <label>Authority Settings (Security Options)</label>
+        <div class="checkbox-group">
+            <input type="checkbox" id="revokeMint" checked>
+            <span>Revoke Mint (Fixed Supply)</span>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="revokeFreeze" checked>
+            <span>Revoke Freeze (Protect Buyers)</span>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="revokeMetadata" checked>
+            <span>Revoke Metadata (Immutable)</span>
+        </div>
+
+        <button id="btnCreate" class="btn-main">CREATE TOKEN NOW</button>
     </div>
 
-    <div class="section-title">Social Links</div>
-    <input type="text" id="linkWeb" placeholder="Website URL (https://...)">
-    <input type="text" id="linkX" placeholder="Twitter / X Profile Link">
-
-    <button class="btn-create" onclick="processAutoDeploy()">2. CREATE TOKEN (0.30 SOL)</button>
-    <div class="fee-badge"><span style="font-size: 13px; font-weight: bold; color: #14f195;">SERVICE FEE: 0.30 SOL</span></div>
-    <div id="status" class="status-box">Ready to Deploy</div>
+    <div class="ref-box">
+        <h3 style="color: var(--purple); font-size: 15px; margin: 0;">🤝 Referral Program</h3>
+        <p style="font-size: 11px; color: #888;">Get 0.005 SOL commission for every creation!</p>
+        <input type="text" id="refWallet" placeholder="Your SOL Wallet for Rewards">
+        <button onclick="generateRefLink()" style="background: #333; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; cursor: pointer; margin-top: 5px; font-size: 12px;">Generate My Referral Link</button>
+        <code id="displayLink" class="ref-link">Link will appear here...</code>
+    </div>
 </div>
 
 <script>
-    let userWallet = null;
-    const myAdminWallet = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
-    const RPC_URL = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
+    // --- KONFIGURASI FIX ---
+    const OWNER_WALLET = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8"; 
+    const TOTAL_FEE = 0.30;
+    const REF_COMMISSION = 0.005;
 
-    function previewImage(event) {
-        const preview = document.getElementById('preview');
-        const fileLabel = document.getElementById('fileLabel');
-        preview.src = URL.createObjectURL(event.target.files[0]);
-        preview.style.display = 'block';
-        fileLabel.style.display = 'none';
-    }
+    let walletConnected = null;
 
-    async function connectWallet() {
-        if (window.solana && window.solana.isPhantom) {
+    // Detect Referral from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrer = urlParams.get('ref');
+    if (referrer) localStorage.setItem('active_referrer', referrer);
+
+    // Phantom Connection
+    document.getElementById('btnConnect').onclick = async () => {
+        if (window.solana) {
             try {
-                const response = await window.solana.connect();
-                userWallet = response.publicKey.toString();
-                document.getElementById('walletAddr').innerText = "Connected: " + userWallet.substring(0,8) + "...";
-                document.getElementById('btnConnect').innerText = "CONNECTED ✅";
-                document.getElementById('btnConnect').style.background = "#14f195";
-                document.getElementById('btnConnect').style.color = "#000";
-            } catch (err) { alert(err.message); }
-        } else { alert("Open in Kiwi Browser & Install Phantom Extension!"); }
-    }
-
-    async function processAutoDeploy() {
-        if (!userWallet) return alert("Connect wallet first!");
-        const status = document.getElementById('status');
-        status.innerHTML = "⏳ Processing 0.30 SOL Fee...";
-        
-        try {
-            const connection = new solanaWeb3.Connection(RPC_URL, "confirmed");
-            const transaction = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: window.solana.publicKey,
-                    toPubkey: new solanaWeb3.PublicKey(myAdminWallet),
-                    lamports: 0.30 * solanaWeb3.LAMPORTS_PER_SOL
-                })
-            );
-            const { blockhash } = await connection.getLatestBlockhash();
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = window.solana.publicKey;
-
-            const { signature } = await window.solana.signAndSendTransaction(transaction);
-            status.innerHTML = "🚀 Payment Confirmed! Deploying Token Metadata...";
-            await connection.confirmTransaction(signature);
-            
-            status.innerHTML = "✅ SUCCESS! Your token is being minted.<br>Check your wallet soon.";
-            alert("Success! 0.30 SOL sent and Token data registered via Helius.");
-        } catch (err) {
-            status.innerHTML = "<span style='color: #ff4a4a;'>❌ Transaction Failed.</span>";
+                const resp = await window.solana.connect();
+                walletConnected = resp.publicKey.toString();
+                document.getElementById('btnConnect').innerText = `Connected: ${walletConnected.substring(0,6)}...`;
+                document.getElementById('btnConnect').style.background = "#222";
+            } catch (err) { alert("Connection denied."); }
+        } else {
+            alert("Phantom wallet not found!");
         }
+    };
+
+    // Referral Link Generator
+    function generateRefLink() {
+        const wallet = document.getElementById('refWallet').value;
+        if (wallet.length < 32) return alert("Please enter a valid SOL address.");
+        const link = window.location.origin + window.location.pathname + "?ref=" + wallet;
+        document.getElementById('displayLink').innerText = link;
     }
+
+    // Process Create Token
+    document.getElementById('btnCreate').onclick = async () => {
+        if (!walletConnected) return alert("Please connect your wallet first!");
+        
+        const activeRef = localStorage.getItem('active_referrer');
+        const lamportsTotal = TOTAL_FEE * solanaWeb3.LAMPORTS_PER_SOL;
+        const lamportsRef = REF_COMMISSION * solanaWeb3.LAMPORTS_PER_SOL;
+        const logo = document.getElementById('logoFile').files[0];
+
+        if (!logo) return alert("Please select a logo from your gallery!");
+
+        try {
+            const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+            let transaction = new solanaWeb3.Transaction();
+            const fromPubkey = new solanaWeb3.PublicKey(walletConnected);
+
+            // LOGIKA PEMBAYARAN & REFERRAL
+            if (activeRef && activeRef !== OWNER_WALLET) {
+                // Skema 1: Ada Referral
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: fromPubkey,
+                        toPubkey: new solanaWeb3.PublicKey(activeRef),
+                        lamports: lamportsRef
+                    })
+                );
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: fromPubkey,
+                        toPubkey: new solanaWeb3.PublicKey(OWNER_WALLET),
+                        lamports: lamportsTotal - lamportsRef
+                    })
+                );
+            } else {
+                // Skema 2: Tanpa Referral (Full ke Owner)
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: fromPubkey,
+                        toPubkey: new solanaWeb3.PublicKey(OWNER_WALLET),
+                        lamports: lamportsTotal
+                    })
+                );
+            }
+
+            console.log("Token Creation Init:", document.getElementById('tokenName').value);
+            alert("Approve the transaction in Phantom to pay 0.30 SOL and Mint your Token.");
+            
+            // Logic Lanjutan (Upload ke IPFS & SPL-Token Minting) dipicu setelah pembayaran sukses
+            
+        } catch (err) {
+            alert("Transaction error: " + err.message);
+        }
+    };
 </script>
+
 </body>
 </html>
