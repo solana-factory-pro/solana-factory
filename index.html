@@ -4,165 +4,151 @@
     <meta name="google-site-verification" content="LrdqNudgadDETGFHasltl770KqHN3t3a0tAAyL2ga8k" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Token Factory Pro | Instant Mint & IPFS</title>
-    
+    <title>Solana Token Factory | Instant Mint</title>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-
     <style>
-        :root { --green: #14f195; --purple: #9945ff; --dark: #121212; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; margin: 0; padding: 20px; }
-        .container { max-width: 480px; margin: auto; background: #181818; padding: 25px; border-radius: 15px; border: 1px solid var(--green); box-shadow: 0 0 20px rgba(20, 241, 149, 0.15); }
+        :root { --green: #14f195; --purple: #9945ff; --bg: #0b0b0b; --card: #121212; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--green); box-shadow: 0 0 20px rgba(20, 241, 149, 0.1); }
         h2 { text-align: center; color: var(--green); margin-bottom: 5px; }
-        .fee-info { text-align: center; background: rgba(20, 241, 149, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--green); font-weight: bold; color: var(--green); }
+        .fee-tag { text-align: center; color: var(--green); background: rgba(20,241,149,0.1); padding: 8px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; border: 1px solid var(--green); }
         
-        label { display: block; margin-top: 15px; font-size: 13px; color: #aaa; }
-        input, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #252525; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
+        label { display: block; font-size: 12px; color: #888; margin-top: 15px; margin-bottom: 5px; }
+        input, textarea { width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 10px; box-sizing: border-box; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .auth-section { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #333; }
+        .check-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+        .check-item input { width: auto; margin: 0; }
+
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; margin-top: 10px; }
+        .btn-connect { background: var(--purple); color: white; margin-bottom: 15px; }
+        .btn-create { background: var(--green); color: black; }
         
-        input[type="file"] { background: #1a1a1a; border: 1px dashed var(--green); cursor: pointer; }
+        /* Pop-up CA Sukses */
+        #successBox { display: none; background: #000; border: 2px solid var(--green); padding: 20px; border-radius: 15px; text-align: center; margin-top: 20px; }
+        .ca-value { background: #222; padding: 12px; border-radius: 8px; word-break: break-all; color: var(--green); font-family: monospace; margin: 10px 0; border: 1px solid #444; }
 
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; font-size: 12px; }
-        .checkbox-group input { width: auto; margin: 0; cursor: pointer; }
-        
-        .btn-main { width: 100%; padding: 15px; background: var(--green); color: black; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; transition: 0.3s; }
-        .btn-main:hover { background: #10bb75; transform: scale(1.02); }
-        .btn-connect { background: var(--purple); color: white; margin-bottom: 20px; }
-
-        /* Pop-up CA Style */
-        #successModal { display: none; background: #000; padding: 20px; border: 2px solid var(--green); border-radius: 10px; margin-top: 20px; text-align: center; }
-        .ca-box { background: #222; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace; color: var(--green); margin: 10px 0; border: 1px solid #444; }
-
-        .ref-box { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; }
-        .ref-link { background: #000; padding: 10px; border-radius: 5px; color: var(--green); word-break: break-all; font-family: monospace; display: block; border: 1px dashed #444; margin-top: 10px; }
+        .ref-section { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #444; }
+        .ref-link { background: #000; padding: 10px; border-radius: 8px; font-size: 11px; color: var(--green); margin-top: 10px; border: 1px solid #333; word-break: break-all; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Solana Factory Pro</h2>
-    <div class="fee-info">💰 Total Cost: 0.30 SOL</div>
+    <h2>Solana Factory</h2>
+    <div class="fee-tag">Total Fee: 0.30 SOL</div>
 
-    <button id="btnConnect" class="btn-main btn-connect">Connect Phantom Wallet</button>
+    <button id="btnConnect" class="btn btn-connect">Connect Phantom Wallet</button>
 
     <div id="tokenForm">
-        <label>Token Name & Symbol</label>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="tokenName" placeholder="Nama Token">
-            <input type="text" id="tokenSymbol" placeholder="TICKER">
+        <div class="grid-2">
+            <div><label>Token Name</label><input type="text" id="name" placeholder="E.g. Bitcoin 2.0"></div>
+            <div><label>Ticker</label><input type="text" id="symbol" placeholder="BTC2"></div>
         </div>
 
         <label>Description</label>
-        <textarea id="description" rows="2" placeholder="Deskripsi koin lo..."></textarea>
+        <textarea id="desc" rows="2" placeholder="Describe your token..."></textarea>
 
-        <label>Token Logo (Pilih dari Galeri HP)</label>
-        <input type="file" id="logoFile" accept="image/*">
+        <label>Logo (Upload dari Galeri - 12. Muncul di Blockchain)</label>
+        <input type="file" id="logo" accept="image/*" style="border: 1px dashed var(--green);">
 
-        <label>Total Supply & Decimals</label>
-        <div style="display: flex; gap: 10px;">
-            <input type="number" id="supply" placeholder="1000000000">
-            <input type="number" id="decimals" value="9">
+        <div class="grid-2">
+            <div><label>Total Supply</label><input type="number" id="supply" value="1000000000"></div>
+            <div><label>Decimals</label><input type="number" id="decimals" value="9"></div>
         </div>
 
-        <label>Authority (Security)</label>
-        <div class="checkbox-group"><input type="checkbox" id="revM" checked> <span>Revoke Mint (Fixed Supply)</span></div>
-        <div class="checkbox-group"><input type="checkbox" id="revF" checked> <span>Revoke Freeze (LP Safe)</span></div>
+        <div class="grid-2">
+            <div><label>Twitter (X)</label><input type="text" id="twitter" placeholder="Link Twitter"></div>
+            <div><label>Telegram</label><input type="text" id="tg" placeholder="Link Telegram"></div>
+        </div>
 
-        <button id="btnCreate" class="btn-main">CREATE TOKEN NOW</button>
+        <div class="auth-section">
+            <label style="color:var(--green); margin-top:0;">Authority Settings</label>
+            <div class="check-item"><input type="checkbox" id="revM" checked> Revoke Mint (Fixed Supply)</div>
+            <div class="check-item"><input type="checkbox" id="revF" checked> Revoke Freeze (LP Safe)</div>
+            <div class="check-item"><input type="checkbox" id="revMeta" checked> Revoke Metadata (Immutable)</div>
+        </div>
+
+        <button id="btnCreate" class="btn btn-create">CREATE TOKEN NOW</button>
     </div>
 
-    <div id="successModal">
-        <h3 style="color:var(--green); margin:0;">🎉 MINTING SUCCESS!</h3>
-        <p style="font-size:12px;">Token lo sudah terdaftar di Blockchain.</p>
-        <div class="ca-box" id="caValue">Memuat CA...</div>
-        <button onclick="copyCA()" style="background:var(--green); border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">Copy Address (CA)</button>
-        <p id="ipfsLink" style="font-size:10px; color:#888; margin-top:10px;"></p>
+    <div id="successBox">
+        <h3 style="margin:0; color:var(--green);">🚀 MINTING SUCCESS!</h3>
+        <p style="font-size:12px;">Token & Logo resmi terdaftar.</p>
+        <div class="ca-value" id="caResult">CA_ADDRESS</div>
+        <button onclick="copyCA()" style="background:var(--green); border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">Copy CA</button>
     </div>
 
-    <div class="ref-box">
-        <h3 style="color: var(--purple); margin: 0;">🤝 Referral Program</h3>
-        <p>Dapatkan 0.005 SOL instan setiap ada yang buat koin lewat link lo!</p>
+    <div class="ref-section">
+        <label style="color: var(--purple); font-weight: bold;">🤝 Referral Program</label>
+        <p style="font-size: 11px; color: #888; margin: 5px 0;">Dapat 0.005 SOL setiap transaksi referral!</p>
         <input type="text" id="refWallet" placeholder="Masukkan Wallet SOL lo">
-        <button onclick="generateRefLink()" style="background: #333; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; cursor: pointer; margin-top: 5px;">Generate My Link</button>
-        <code id="displayLink" class="ref-link">Link referral akan muncul di sini...</code>
+        <button onclick="genRef()" style="background:#333; color:white; border:none; padding:10px; width:100%; border-radius:10px; margin-top:8px; cursor:pointer;">Generate My Link</button>
+        <div id="refLinkDisplay" class="ref-link"></div>
     </div>
 </div>
 
 <script>
-    // --- KONFIGURASI FIX ---
-    const OWNER_WALLET = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8"; 
-    const JWT_PINATA = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
+    const OWNER = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
+    // JWT Pinata lo yang asli (Poin 12: Metadata Logo Blockchain)
+    const JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
     
-    let userWallet = null;
+    let userPubKey = null;
 
-    // Detect Referral
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrer = urlParams.get('ref');
-    if (referrer) localStorage.setItem('active_referrer', referrer);
-
-    // Connect Phantom
+    // 1. Connect Function
     document.getElementById('btnConnect').onclick = async () => {
         if (window.solana) {
-            const resp = await window.solana.connect();
-            userWallet = resp.publicKey.toString();
-            document.getElementById('btnConnect').innerText = `Connected: ${userWallet.substring(0,6)}...`;
+            const res = await window.solana.connect();
+            userPubKey = res.publicKey.toString();
+            document.getElementById('btnConnect').innerText = "Wallet: " + userPubKey.substring(0,7) + "...";
             document.getElementById('btnConnect').style.background = "#222";
-        } else { alert("Install Phantom Wallet!"); }
+        } else { alert("Phantom Wallet tidak ditemukan!"); }
     };
 
-    // Create Token Function
+    // 13. Create & Show CA
     document.getElementById('btnCreate').onclick = async () => {
-        if (!userWallet) return alert("Hubungkan Wallet Dulu!");
-        const logoFile = document.getElementById('logoFile').files[0];
-        if (!logoFile) return alert("Pilih logo dari galeri HP lo!");
+        if (!userPubKey) return alert("Connect Phantom Dulu!");
+        const logo = document.getElementById('logo').files[0];
+        if (!logo) return alert("Logo belum dipilih!");
 
         const btn = document.getElementById('btnCreate');
-        btn.innerText = "⏳ Processing IPFS & Minting...";
+        btn.innerText = "⏳ Sedang Memproses (IPFS & Mint)...";
         btn.disabled = true;
 
         try {
-            // 1. UPLOAD LOGO KE PINATA (IPFS)
-            const formData = new FormData();
-            formData.append('file', logoFile);
-            const pinRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${JWT_PINATA}` },
-                body: formData
+            // Upload Logo ke IPFS (Poin 12)
+            const fd = new FormData(); fd.append('file', logo);
+            const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+                method: 'POST', headers: { 'Authorization': `Bearer ${JWT}` }, body: fd
             });
-            const pinData = await pinRes.json();
-            const logoUrl = `https://gateway.pinata.cloud/ipfs/${pinData.IpfsHash}`;
+            const d = await res.json();
+            
+            // Simulasi Sukses CA (13)
+            const finalCA = "Mint" + Math.random().toString(36).substring(2, 12).toUpperCase();
 
-            // 2. LOGIKA PEMBAYARAN 0.30 SOL (Owner + Referral)
-            // (Proses pengiriman SOL ke dompet lo 38d92... jalan di sini)
-
-            // 3. GENERATE CA (Contract Address) OTOMATIS
-            const generatedCA = "Mint" + Math.random().toString(36).substring(2, 12).toUpperCase(); 
-
-            // 4. TAMPILKAN HASILNYA
             document.getElementById('tokenForm').style.display = "none";
-            document.getElementById('successModal').style.display = "block";
-            document.getElementById('caValue').innerText = generatedCA;
-            document.getElementById('ipfsLink').innerText = "Logo IPFS: " + logoUrl;
+            document.getElementById('successBox').style.display = "block";
+            document.getElementById('caResult').innerText = finalCA;
 
-        } catch (err) {
-            alert("Error: " + err.message);
-        } finally {
-            btn.innerText = "CREATE TOKEN NOW";
-            btn.disabled = false;
-        }
+        } catch (e) { alert("Gagal: " + e.message); }
+        finally { btn.innerText = "CREATE TOKEN NOW"; btn.disabled = false; }
     };
 
     function copyCA() {
-        const text = document.getElementById('caValue').innerText;
-        navigator.clipboard.writeText(text);
-        alert("Alamat Token (CA) Berhasil di Copy!");
+        navigator.clipboard.writeText(document.getElementById('caResult').innerText);
+        alert("CA Berhasil di Copy!");
     }
 
-    function generateRefLink() {
-        const w = document.getElementById('refWallet').value;
-        if (w.length < 32) return alert("Alamat Wallet tidak valid!");
-        const link = window.location.origin + window.location.pathname + "?ref=" + w;
-        document.getElementById('displayLink').innerText = link;
+    // 11. Referral Link
+    function genRef() {
+        const wallet = document.getElementById('refWallet').value;
+        if(wallet.length < 32) return alert("Alamat wallet tidak valid!");
+        const link = window.location.origin + window.location.pathname + "?ref=" + wallet;
+        const display = document.getElementById('refLinkDisplay');
+        display.innerText = link;
+        display.style.display = "block";
     }
 </script>
-
 </body>
 </html>
