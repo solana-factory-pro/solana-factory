@@ -144,7 +144,7 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
                 document.getElementById('symbol').value, 
                 document.getElementById('desc').value
             );
-            const connection = new solanaWeb3.Connection("https://rpc.ankr.com/solana", "confirmed");
+            const connection = new solanaWeb3.Connection("https://solana-mainnet.rpc.extrnode.com", "confirmed");
             const mintKeypair = solanaWeb3.Keypair.generate();
             const transaction = new solanaWeb3.Transaction();
 
