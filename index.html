@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Solana Factory v15 | Full Social Metadata</title>
+    <title>Solana Factory v15 | Final Stable</title>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@0.4.0/lib/index.iife.min.js"></script>
     <script src="https://bundle.run/buffer@6.0.3"></script>
@@ -64,19 +64,14 @@
 </div>
 
 <script>
-    // 1. Inisialisasi Buffer dan Library (WAJIB ADA PALING ATAS)
+    // 1. Inisialisasi
     window.Buffer = buffer.Buffer;
     const splToken = window.splToken;
-// Definisikan MINT_SIZE secara manual agar script tidak bingung
-const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
+    const MINT_SIZE = 82; 
 
-    // 2. Konfigurasi ID & API
     const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
     const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
     const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
-    const FEE_AMOUNT = 0.3;
-
-    // 3. Status State
 
     let userPubKey = null;
     const updateLog = (m) => { document.getElementById('log').innerHTML += `> ${m}<br>`; };
@@ -90,12 +85,14 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
     };
 
     document.getElementById('btnConnect').onclick = async () => {
-        const resp = await window.solana.connect();
-        userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
+        try {
+            const resp = await window.solana.connect();
+            userPubKey = resp.publicKey;
+            document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
+            updateLog("Wallet connected: " + userPubKey.toBase58());
+        } catch (err) { alert("Gagal konek wallet!"); }
     };
 
-    // FUNGSI UPLOAD DENGAN EXTENSIONS (Poin 4)
     async function uploadProcess(file, name, symbol, desc) {
         updateLog("Uploading Image to IPFS...");
         const formData = new FormData();
@@ -106,12 +103,9 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
         const imgData = await imgRes.json();
         const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
 
-        updateLog("Creating Metadata JSON with Extensions...");
+        updateLog("Creating Metadata JSON...");
         const metaJSON = {
-            name: name,
-            symbol: symbol,
-            description: desc,
-            image: imageUrl,
+            name: name, symbol: symbol, description: desc, image: imageUrl,
             extensions: {
                 website: document.getElementById('website').value,
                 twitter: document.getElementById('twitter').value,
@@ -129,9 +123,9 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
     }
 
     document.getElementById('btnCreate').onclick = async () => {
-        if (!userPubKey) return alert("Connect Wallet!");
+        if (!userPubKey) return alert("Connect Wallet Dulu!");
         const file = document.getElementById('logoFile').files[0];
-        if (!file) return alert("Please select a Logo!");
+        if (!file) return alert("Pilih Logo!");
 
         const btn = document.getElementById('btnCreate');
         btn.disabled = true;
@@ -144,6 +138,8 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
                 document.getElementById('symbol').value, 
                 document.getElementById('desc').value
             );
+
+            // PAKAI RPC INI BIAR GAK 403
             const connection = new solanaWeb3.Connection("https://solana-mainnet.rpc.extrnode.com", "confirmed");
             const mintKeypair = solanaWeb3.Keypair.generate();
             const transaction = new solanaWeb3.Transaction();
@@ -164,25 +160,18 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
                     lamports: await connection.getMinimumBalanceForRentExemption(MINT_SIZE),
                     programId: splToken.TOKEN_PROGRAM_ID,
                 }),
-                splToken.createInitializeMintInstruction(
-                    mintKeypair.publicKey, 
-                    decimals, 
-                    userPubKey, 
-                    userPubKey
-                )
+                splToken.createInitializeMintInstruction(mintKeypair.publicKey, decimals, userPubKey, userPubKey)
             );
 
-            // 3. CREATE METADATA V3
+            // 3. METADATA
             const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
                 [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKeypair.publicKey.toBuffer()],
                 METADATA_PROGRAM_ID
             );
 
-            const isMutable = !document.getElementById('revUpdate').checked;
-
             transaction.add(mplTokenMetadata.createCreateMetadataAccountV3Instruction(
                 { metadata: metadataPDA, mint: mintKeypair.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
-                { createMetadataAccountV3Args: { data: { name: document.getElementById('name').value, symbol: document.getElementById('symbol').value, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: isMutable, collectionDetails: null } }
+                { createMetadataAccountV3Args: { data: { name: document.getElementById('name').value, symbol: document.getElementById('symbol').value, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: !document.getElementById('revUpdate').checked, collectionDetails: null } }
             ));
 
             // 4. MINT SUPPLY
@@ -192,22 +181,26 @@ const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
                 splToken.createMintToInstruction(mintKeypair.publicKey, ata, userPubKey, BigInt(document.getElementById('supply').value) * BigInt(10 ** decimals))
             );
 
-            // 5. REVOKE AUTHORITIES
+            // 5. REVOKE
             if(document.getElementById('revMint').checked) 
                 transaction.add(splToken.createSetAuthorityInstruction(mintKeypair.publicKey, userPubKey, splToken.AuthorityType.MintTokens, null));
             if(document.getElementById('revFreeze').checked) 
                 transaction.add(splToken.createSetAuthorityInstruction(mintKeypair.publicKey, userPubKey, splToken.AuthorityType.FreezeAccount, null));
 
-            updateLog("Transaction Prepared. Please sign in Phantom...");
+            updateLog("Menunggu tanda tangan Phantom...");
             const { signature } = await window.solana.signAndSendTransaction(transaction, [mintKeypair]);
-            updateLog("Confirming on Blockchain...");
-            await connection.confirmTransaction(signature);
+            updateLog("Sedang diproses di Blockchain...");
             
-            updateLog(`SUCCESS! Token CA: ${mintKeypair.publicKey.toBase58()}`);
-            alert("TOKEN LAUNCHED WITH SOCIALS!");
+            // Timeout handling
+            const result = await connection.confirmTransaction(signature);
+            if(result.value.err) throw new Error("Transaksi gagal di jaringan.");
+
+            updateLog(`BERHASIL! CA: ${mintKeypair.publicKey.toBase58()}`);
+            alert("TOKEN BERHASIL DIBUAT!");
 
         } catch (err) {
             updateLog(`Error: ${err.message}`);
+            if(err.message.includes("403")) updateLog("Saran: Ganti ke Data Seluler HP!");
         } finally {
             btn.disabled = false;
             btn.innerText = "LAUNCH TOKEN WITH SOCIALS";
