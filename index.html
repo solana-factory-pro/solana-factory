@@ -1,41 +1,106 @@
-// --- 0. INITIALIZATION (WAJIB DI ATAS) ---
-window.Buffer = window.Buffer || buffer.Buffer;
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Solana Factory v38 | Powered by Helius & Pinata</title>
+    <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/browser/index.iife.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #ffffff; padding: 20px; display: flex; justify-content: center; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #14f195; text-align: center; margin-bottom: 25px; }
+        label { font-size: 12px; color: #9945FF; font-weight: bold; }
+        input, textarea { width: 100%; margin: 8px 0 18px 0; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        #btnConnect { background: #9945FF; margin-bottom: 15px; }
+        #btnCreate { background: #14f195; color: #000; font-size: 16px; }
+        #btnCreate:disabled { background: #444; color: #888; cursor: not-allowed; }
+        #log { margin-top: 20px; padding: 15px; background: #000; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #00ff00; max-height: 150px; overflow-y: auto; border: 1px solid #222; }
+    </style>
+</head>
+<body>
 
-// Fungsi untuk ambil library SPL secara aman (Fix untuk Screenshot 1 & 4)
+<div class="card">
+    <h2>Solana Token Creator</h2>
+    
+    <button id="btnConnect">CONNECT PHANTOM WALLET</button>
+    
+    <label>LOGO TOKEN (MAX 2MB):</label>
+    <input id="logoFile" type="file" accept="image/*">
+    
+    <label>TOKEN IDENTITY:</label>
+    <input id="name" placeholder="Token Name (e.g. SHINRYU)">
+    <input id="symbol" placeholder="Symbol (e.g. SHIN)">
+    <textarea id="desc" placeholder="Token Description..." rows="2"></textarea>
+    
+    <label>SOCIAL LINKS (OPTIONAL):</label>
+    <input id="website" placeholder="https://website.com">
+    <input id="twitter" placeholder="https://x.com/username">
+    <input id="telegram" placeholder="https://t.me/group">
+    
+    <label>TOKENOMICS:</label>
+    <input id="supply" type="number" placeholder="Total Supply (e.g. 1000000000)">
+    <input id="decimals" type="number" placeholder="Decimals (Standard: 9)" value="9">
+
+    <button id="btnCreate">LAUNCH TOKEN (0.3 SOL)</button>
+    
+    <div id="log">Status: Awaiting Wallet Connection...</div>
+</div>
+
+<script>
+// --- INTEGRATED CONFIGURATION ---
+const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1"; //
+const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE"; //
+const OWNER_FEE_DEST = "38d92K9xPyTM94mC5u1kXfE5Ysh66FzNUn6mK3S1C4fP"; //
+const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
+
+// --- INITIALIZATION ---
+window.Buffer = window.Buffer || buffer.Buffer;
+let userPubKey = null;
+
 function getSplToken() {
     return window.splToken || window.solanaSplToken;
 }
 
-const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
-const OWNER_FEE_DEST = "38d92K9xPyTM94mC5u1kXfE5Ysh66FzNUn6mK3S1C4fP"; // Ganti dengan wallet fee lo
-const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=ISI_API_KEY_LO_DISINI"; 
+function updateLog(msg) {
+    const logDiv = document.getElementById('log');
+    logDiv.innerHTML += `<br>> ${msg}`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
 
-// --- 1. FIX FUNGSI UPLOAD IPFS (Support Socials & Extensions) ---
+// --- WALLET LOGIC ---
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        if (!window.solana) return alert("Please install Phantom Wallet!");
+        const resp = await window.solana.connect();
+        userPubKey = resp.publicKey;
+        document.getElementById('btnConnect').innerText = `CONNECTED: ${userPubKey.toString().slice(0,6)}...`;
+        document.getElementById('btnConnect').style.background = "#14f195";
+        updateLog("Wallet connected successfully.");
+    } catch (err) { alert(err.message); }
+};
+
+// --- IPFS LOGIC ---
 async function uploadIPFS(file, name, symbol, desc, website, twitter, telegram) {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Upload Logo
     const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: 'POST', 
         headers: { Authorization: `Bearer ${PINATA_JWT}` }, 
         body: formData
     });
     const imgData = await imgRes.json();
+    if (!imgData.IpfsHash) throw new Error("Logo upload to IPFS failed.");
     const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
 
-    // STRUKTUR JSON EXTENSIONS (Fix Poin 2)
     const metaJSON = { 
-        name, 
-        symbol, 
-        description: desc || "", 
-        image: imageUrl,
+        name, symbol, description: desc || "", image: imageUrl,
         external_url: website || "",
-        extensions: {
-            website: website || "",
-            twitter: twitter || "",
-            telegram: telegram || ""
-        }
+        extensions: { website, twitter, telegram }
     };
 
     const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
@@ -47,72 +112,54 @@ async function uploadIPFS(file, name, symbol, desc, website, twitter, telegram) 
     return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
-// --- 2. MAIN LAUNCHER FUNCTION ---
+// --- MAIN LAUNCHER ---
 document.getElementById('btnCreate').onclick = async () => {
-    // AMBIL LIBRARY DI DALAM KLIK
     const spl = getSplToken();
-    
-    // PROTEKSI: Cek Library & Wallet (Fix Poin 1)
-    if (!spl) return alert("Library Solana sedang dimuat, tunggu 3 detik dan klik lagi!");
-    if (!userPubKey) return alert("Connect Wallet Dulu!");
+    if (!spl || !userPubKey) return alert("Connect Wallet & ensure libraries are loaded!");
     
     const btn = document.getElementById('btnCreate');
-    if (btn.dataset.loading === "1") return; 
-    
-    btn.dataset.loading = "1";
-    btn.disabled = true; 
+    btn.disabled = true;
+    btn.innerText = "LAUNCHING...";
 
     const connection = new solanaWeb3.Connection(HELIUS_RPC, "confirmed");
-    const updateProgress = (step, msg) => {
-        btn.innerText = `[${step}/5] ${msg}`;
-        const logEl = document.getElementById('log');
-        if(logEl) logEl.innerHTML += `<br><b>Step ${step}:</b> ${msg}`;
-    };
 
     try {
-        // --- STEP 1: VALIDASI ---
-        updateProgress(1, "VALIDATING DATA...");
         const logoFile = document.getElementById('logoFile').files[0];
-        if (!logoFile) throw new Error("Logo wajib diupload!");
-        if (logoFile.size > 2 * 1024 * 1024) throw new Error("Logo Maksimal 2MB!");
-
-        const name = (document.getElementById('name').value || "").trim().slice(0, 32);
-        const symbol = (document.getElementById('symbol').value || "").trim().toUpperCase().slice(0, 10);
-        const desc = document.getElementById('desc').value || "";
-        const web = document.getElementById('website').value || "";
-        const twt = document.getElementById('twitter').value || "";
-        const tg = document.getElementById('telegram').value || "";
-
-        const rawSupply = document.getElementById('supply').value.replace(/[^0-9]/g, '');
-        const supplyValue = rawSupply ? BigInt(rawSupply) : 0n;
+        if (!logoFile) throw new Error("Logo file is required!");
+        if (logoFile.size > 2 * 1024 * 1024) throw new Error("Logo must be under 2MB!");
         
-        if (supplyValue <= 0n) throw new Error("Supply harus > 0");
-        if (supplyValue > 1000000000000000n) throw new Error("Supply terlalu besar!");
+        const name = document.getElementById('name').value;
+        const symbol = document.getElementById('symbol').value;
+        const supplyInput = document.getElementById('supply').value;
+        const decimals = parseInt(document.getElementById('decimals').value) || 9;
 
-        const decimals = Math.min(9, Math.max(0, parseInt(document.getElementById('decimals').value) || 9));
+        if(!name || !symbol || !supplyInput) throw new Error("Please fill all required fields!");
+        const supplyValue = BigInt(supplyInput);
 
-        // --- STEP 2: UPLOAD IPFS ---
-        updateProgress(2, "UPLOADING IPFS...");
-        const metadataUri = await uploadIPFS(logoFile, name, symbol, desc, web, twt, tg);
+        updateLog("Step 1/5: Pinning Metadata to IPFS...");
+        const metadataUri = await uploadIPFS(logoFile, name, symbol, 
+            document.getElementById('desc').value,
+            document.getElementById('website').value,
+            document.getElementById('twitter').value,
+            document.getElementById('telegram').value
+        );
 
-        // --- STEP 3: PREPARE TX ---
-        updateProgress(3, "PREPARING ON-CHAIN...");
+        updateLog("Step 2/5: Building Transaction...");
         const mintKey = solanaWeb3.Keypair.generate();
         const transaction = new solanaWeb3.Transaction();
-        const latestBlockHash = await connection.getLatestBlockhash('confirmed');
+        const latestBlockHash = await connection.getLatestBlockhash();
         
         transaction.recentBlockhash = latestBlockHash.blockhash;
-        transaction.lastValidBlockHeight = latestBlockHash.lastValidBlockHeight;
         transaction.feePayer = userPubKey;
 
-        // Fee + Create Acc + Init Mint
+        // Fees + Mint Account + Initialize
         transaction.add(
             solanaWeb3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL }),
             solanaWeb3.SystemProgram.createAccount({ fromPubkey: userPubKey, newAccountPubkey: mintKey.publicKey, space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82), programId: spl.TOKEN_PROGRAM_ID }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // Metaplex Metadata V3 (PDA)
+        // Metadata PDA V3
         const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
             METADATA_PROGRAM_ID
@@ -121,48 +168,4 @@ document.getElementById('btnCreate').onclick = async () => {
         transaction.add(
             window.mplTokenMetadata.createCreateMetadataAccountV3Instruction(
                 { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
-                { createMetadataAccountV3Args: { data: { name, symbol, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: false, collectionDetails: null } }
-            )
-        );
-
-        // --- STEP 4: MINT & REVOKE ---
-        updateProgress(4, "MINTING & LOCKING...");
-        const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
-        const totalAmount = supplyValue * (BigInt(10) ** BigInt(decimals));
-
-        transaction.add(
-            spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
-            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, totalAmount),
-            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
-            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
-        );
-
-        // --- STEP 5: EXECUTE ---
-        updateProgress(5, "WAITING FOR WALLET...");
-        transaction.partialSign(mintKey);
-        const signed = await window.solana.signTransaction(transaction);
-        const signature = await connection.sendRawTransaction(signed.serialize());
-        
-        btn.innerText = "CONFIRMING...";
-        await connection.confirmTransaction({ blockhash: latestBlockHash.blockhash, lastValidBlockHeight: latestBlockHash.lastValidBlockHeight, signature }, 'confirmed');
-
-        // SUCCESS
-        const ca = mintKey.publicKey.toBase58();
-        const logEl = document.getElementById('log');
-        if(logEl) logEl.innerHTML += `<br><span style='color:#14f195'><b>SUCCESS!</b></span> CA: <code>${ca}</code>`;
-        
-        window.open(`https://solscan.io/token/${ca}`, '_blank');
-        window.open(`https://dexscreener.com/solana/${ca}`, '_blank');
-        
-        alert(`Launch Berhasil!\nCA: ${ca}`);
-
-    } catch (err) { 
-        const logEl = document.getElementById('log');
-        if(logEl) logEl.innerHTML += `<br><span style='color:red'>FAILED: ${err.message}</span>`;
-        alert(err.message);
-    } finally { 
-        btn.dataset.loading = "0";
-        btn.disabled = false; 
-        btn.innerText = "LAUNCH TOKEN (0.3 SOL)"; 
-    }
-};
+                { createMetadataAccountV3Args: { data: { name, symbol, uri: metadataUri,
