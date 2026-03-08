@@ -3,82 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Factory v44 | Final Fix</title>
+    <title>Solana Factory v45 | Anti-Error</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/browser/index.iife.js"></script>
     
     <style>
-        body { font-family: sans-serif; background: #0a0a0a; color: #eee; padding: 10px; display: flex; justify-content: center; }
-        .card { background: #151515; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid #222; }
-        h2 { color: #14f195; text-align: center; font-size: 20px; }
-        label { font-size: 10px; color: #9945FF; font-weight: bold; display: block; margin-top: 10px; }
-        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #333; background: #202020; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 10px; display: flex; justify-content: center; }
+        .card { background: #151515; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid #222; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h2 { color: #14f195; text-align: center; font-size: 22px; margin-bottom: 20px; text-transform: uppercase; }
+        label { font-size: 11px; color: #9945FF; font-weight: bold; display: block; margin-top: 15px; }
+        input, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
         #btnConnect { background: #9945FF; color: white; }
-        #btnCreate { background: #14f195; color: #000; }
-        #log { margin-top: 15px; padding: 10px; background: #000; border-radius: 6px; font-family: monospace; font-size: 10px; color: #00ff00; height: 80px; overflow-y: auto; }
+        #btnCreate { background: #14f195; color: #000; font-size: 16px; }
+        #btnCreate:disabled { background: #333; color: #888; cursor: not-allowed; }
+        #log { margin-top: 15px; padding: 12px; background: #000; border-radius: 8px; font-family: monospace; font-size: 10px; color: #00ff00; height: 100px; overflow-y: auto; border: 1px solid #222; }
+        .fee-info { font-size: 9px; color: #888; margin-top: 5px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Solana Token Creator</h2>
-    <button id="btnConnect">1. CONNECT WALLET</button>
+    <h2>Token Factory v45</h2>
+    <button id="btnConnect">1. HUBUNGKAN WALLET</button>
     
-    <label>LOGO TOKEN:</label>
-    <input id="logoFile" type="file">
+    <label>LOGO TOKEN (GAMBAR):</label>
+    <input id="logoFile" type="file" accept="image/*">
     
     <label>NAMA & SIMBOL:</label>
-    <input id="name" placeholder="Contoh: Shinryu">
-    <input id="symbol" placeholder="Contoh: SHIN">
+    <input id="name" placeholder="Nama: Shinryu Dragon">
+    <input id="symbol" placeholder="Simbol: SHIN">
     
-    <label>SUPPLY:</label>
+    <label>TOTAL SUPPLY:</label>
     <input id="supply" type="number" placeholder="1000000000">
 
-    <button id="btnCreate">2. LAUNCH TOKEN (0.3 SOL)</button>
-    <div id="log">Status: Standby...</div>
+    <button id="btnCreate">2. LUNCURKAN TOKEN</button>
+    <div class="fee-info">*Biaya Pembuatan: 0.3 SOL</div>
+    <div id="log">Status: Menunggu Wallet...</div>
 </div>
 
 <script>
-// Konfigurasi -
+// --- KONFIGURASI ---
 const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
-const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
+const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6I..." // (Gunakan JWT lengkap lo)
 const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
 
 window.Buffer = window.Buffer || buffer.Buffer;
 let userPubKey = null;
 
-function updateLog(msg) {
+function updateLog(msg, color = "#00ff00") {
     const logDiv = document.getElementById('log');
-    logDiv.innerHTML += `<br>> ${msg}`;
+    logDiv.innerHTML += `<br><span style="color:${color}">> ${msg}</span>`;
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// Connect Wallet
+// Handler Hubungkan Wallet
 document.getElementById('btnConnect').onclick = async () => {
     try {
         const provider = window?.phantom?.solana || window?.solana;
-        if (!provider) return alert("Buka di Phantom Browser!");
+        if (!provider) return alert("Gunakan Phantom/Solflare Browser!");
         const resp = await provider.connect();
         userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = `Wallet: ${userPubKey.toString().slice(0,6)}...`;
-        updateLog("Wallet Connected.");
-    } catch (e) { alert("Gagal connect: " + e.message); }
+        document.getElementById('btnConnect').innerText = `WALLET AKTIF`;
+        document.getElementById('btnConnect').style.background = "#14f195";
+        document.getElementById('btnConnect').style.color = "#000";
+        updateLog("Wallet terhubung: " + userPubKey.toString().slice(0,8) + "...");
+    } catch (e) { updateLog("Gagal connect: " + e.message, "red"); }
 };
 
-// Upload Metadata
+// Upload ke IPFS
 async function uploadIPFS(file, name, symbol) {
+    updateLog("Mengunggah metadata ke IPFS...");
     const formData = new FormData();
     formData.append('file', file);
+    
     const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
     });
     const imgData = await imgRes.json();
     const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
 
-    const metaJSON = { name, symbol, image: imageUrl, description: "Created via Solana Factory" };
+    const metaJSON = { name, symbol, image: imageUrl, description: "Solana Token via Factory v45" };
     const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' }, body: JSON.stringify(metaJSON)
     });
@@ -86,34 +93,45 @@ async function uploadIPFS(file, name, symbol) {
     return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
-// Main Launch Function
+// Eksekusi Pembuatan Token
 document.getElementById('btnCreate').onclick = async () => {
-    // PROTEKSI: Cek library sebelum jalan
+    // FIX: Deteksi Library dengan Fallback (Sesuai Foto Error)
     const web3 = window.solanaWeb3;
-    const spl = window.splToken;
+    const spl = window.splToken || (window.solanaSplToken ? window.solanaSplToken : null);
     const mpl = window.mplTokenMetadata;
 
-    if (!web3 || !spl || !mpl) {
-        return alert("Sabar Bro, library Solana lagi loading... Tunggu 5 detik.");
+    if (!web3 || !spl) {
+        updateLog("Library sedang memuat, tunggu 3 detik...", "orange");
+        return alert("Sabar Bro, library Solana lagi loading... Klik lagi sebentar lagi.");
     }
 
-    const name = document.getElementById('name').value;
-    const symbol = document.getElementById('symbol').value;
-    const supply = document.getElementById('supply').value;
-    const logo = document.getElementById('logoFile').files[0];
+    const name = document.getElementById('name').value.trim();
+    const symbol = document.getElementById('symbol').value.trim();
+    const supplyRaw = document.getElementById('supply').value;
+    const logoFile = document.getElementById('logoFile').files[0];
 
-    if (!userPubKey || !name || !logo) return alert("Lengkapi data & Connect Wallet!");
+    if (!userPubKey) return alert("Hubungkan Wallet Phantom dulu!");
+    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Wajib isi: Nama, Simbol, Supply, dan Logo!");
+
+    const btn = document.getElementById('btnCreate');
+    btn.disabled = true;
+    btn.innerText = "SEDANG MEMPROSES...";
 
     try {
-        updateLog("Step 1: Uploading ke IPFS...");
-        const metaUri = await uploadIPFS(logo, name, symbol);
-
-        updateLog("Step 2: Menyiapkan Transaksi...");
+        const supplyVal = BigInt(supplyRaw);
         const connection = new web3.Connection(HELIUS_RPC, "confirmed");
+        
+        // 1. IPFS Upload
+        const metaUri = await uploadIPFS(logoFile, name, symbol);
+        updateLog("Metadata IPFS Berhasil.");
+
+        // 2. Siapkan Transaksi
+        updateLog("Menyiapkan Transaksi Blockchain...");
         const mintKey = web3.Keypair.generate();
         const transaction = new web3.Transaction();
+        const METADATA_PROGRAM_ID = new web3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
 
-        // 1. Fee & Buat Account Mint
+        // A. Transfer Fee & Buat Account Mint
         transaction.add(
             web3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new web3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * web3.LAMPORTS_PER_SOL }),
             web3.SystemProgram.createAccount({
@@ -121,13 +139,12 @@ document.getElementById('btnCreate').onclick = async () => {
                 newAccountPubkey: mintKey.publicKey,
                 space: 82,
                 lamports: await connection.getMinimumBalanceForRentExemption(82),
-                programId: spl.TOKEN_PROGRAM_ID
+                programId: spl.TOKEN_PROGRAM_ID // FIX: Pakai spl yang terdeteksi
             }),
             spl.createInitializeMintInstruction(mintKey.publicKey, 9, userPubKey, userPubKey)
         );
 
-        // 2. Metadata (Metaplex V3)
-        const METADATA_PROGRAM_ID = new web3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
+        // B. Tambahkan Metadata Metaplex (Agar Logo & Nama Muncul)
         const [metadataPDA] = web3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
             METADATA_PROGRAM_ID
@@ -142,30 +159,40 @@ document.getElementById('btnCreate').onclick = async () => {
             }}
         ));
 
-        // 3. Mint Supply & Revoke Authority (Rug-Proof) -
+        // C. Buat ATA & Mint Supply ke Wallet User
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
-            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, BigInt(supply) * BigInt(1e9)),
-            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null)
+            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal * BigInt(1e9)),
+            // D. Revoke Authority (Rug-Proof: Mint & Freeze dimatikan)
+            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
+            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
 
-        updateLog("Step 3: ACC di Wallet lo...");
+        updateLog("Silakan ACC di Wallet Phantom lo...");
         transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
         transaction.feePayer = userPubKey;
         transaction.partialSign(mintKey);
         
-        const signed = await (window.phantom?.solana || window.solana).signTransaction(transaction);
+        const provider = window?.phantom?.solana || window?.solana;
+        const signed = await provider.signTransaction(transaction);
         const signature = await connection.sendRawTransaction(signed.serialize());
         
-        updateLog("Menunggu Konfirmasi...");
+        updateLog("Menunggu Konfirmasi Jaringan...");
         await connection.confirmTransaction(signature);
         
-        updateLog(`SUKSES! CA: ${mintKey.publicKey.toBase58()}`);
-        alert("Token Berhasil Dibuat!");
+        const ca = mintKey.publicKey.toBase58();
+        updateLog("BERHASIL!", "#14f195");
+        updateLog(`CA: ${ca}`);
+        alert(`GOKIL! Token Berhasil Dibuat!\nCA: ${ca}`);
+        window.open(`https://solscan.io/token/${ca}`, '_blank');
+
     } catch (err) {
-        updateLog("Error: " + err.message);
-        alert("Gagal: " + err.message);
+        updateLog("Gagal: " + err.message, "red");
+        alert("Error: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "LUNCURKAN TOKEN";
     }
 };
 </script>
