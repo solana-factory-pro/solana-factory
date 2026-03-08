@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solana Factory v43 | Pro Launch</title>
     <script src="https://bundle.run/buffer@6.0.3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/browser/index.iife.js"></script>
     
@@ -75,7 +75,7 @@ document.getElementById('btnConnect').onclick = async () => {
     if (!provider) return alert("Buka di Phantom Browser!");
     const resp = await provider.connect();
     userPubKey = resp.publicKey;
-    document.getElementById('btnConnect').innerText = `Wallet: ${userPubKey.toString().slice(0,4)}...`;
+    document.getElementById('btnConnect').innerText = `Wallet Connected`;
     updateLog("Wallet terhubung.");
 };
 
@@ -100,68 +100,86 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
 }
 
 document.getElementById('btnCreate').onclick = async () => {
-    // FIX: Cara panggil library yang benar di browser
+    // RE-CHECK LIBRARY INJECTION
     const web3 = window.solanaWeb3;
     const spl = window.splToken;
     const mpl = window.mplTokenMetadata;
 
-    if (!web3 || !spl || !mpl) return alert("Sabar Bro, library Solana lagi loading... Tunggu 3 detik.");
+    if (!web3 || !spl || !mpl) {
+        updateLog("<span style='color:orange'>Menunggu library... Coba klik lagi dalam 2 detik.</span>");
+        return alert("Sabar Bro, library Solana lagi loading...");
+    }
 
     const name = document.getElementById('name').value;
     const symbol = document.getElementById('symbol').value;
     const supply = document.getElementById('supply').value;
     const logo = document.getElementById('logoFile').files[0];
 
-    if (!userPubKey || !name || !symbol || !supply || !logo) return alert("Isi semua data dulu!");
+    if (!userPubKey) return alert("Connect Wallet Dulu!");
+    if (!name || !symbol || !supply || !logo) return alert("Data belum lengkap!");
 
     try {
-        updateLog("Step 1: Uploading ke IPFS...");
+        const btn = document.getElementById('btnCreate');
+        btn.disabled = true; btn.innerText = "SEDANG MEMPROSES...";
+        
+        updateLog("Step 1: Uploading Metadata ke IPFS...");
         const metaUri = await uploadIPFS(logo, name, symbol, document.getElementById('desc').value, document.getElementById('website').value, document.getElementById('twitter').value, document.getElementById('telegram').value);
 
-        updateLog("Step 2: Menyiapkan Transaksi...");
+        updateLog("Step 2: Membangun Transaksi...");
         const connection = new web3.Connection(HELIUS_RPC, "confirmed");
         const mintKey = web3.Keypair.generate();
         const transaction = new web3.Transaction();
         const decimals = parseInt(document.getElementById('decimals').value) || 9;
 
-        // 1. Fee & Create Account
+        // --- MINT & FEE LOGIC ---
         transaction.add(
             web3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new web3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * web3.LAMPORTS_PER_SOL }),
             web3.SystemProgram.createAccount({ fromPubkey: userPubKey, newAccountPubkey: mintKey.publicKey, space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82), programId: spl.TOKEN_PROGRAM_ID }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // 2. Metadata (Fix logo muncul)
+        // --- METADATA METAPLEX ---
         const METADATA_PROGRAM_ID = new web3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
         const [metadataPDA] = web3.PublicKey.findProgramAddressSync([Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()], METADATA_PROGRAM_ID);
+        
         transaction.add(mpl.createCreateMetadataAccountV3Instruction(
             { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
             { createMetadataAccountV3Args: { data: { name, symbol, uri: metaUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: false, collectionDetails: null } }
         ));
 
-        // 3. ATA & Supply & Revoke Authority (Rug-Proof)
+        // --- ATA & SUPPLY & REVOKE ---
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
             spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, BigInt(supply) * (BigInt(10) ** BigInt(decimals))),
+            // Revoke Mint Authority (Biar gak bisa cetak lagi)
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
+            // Revoke Freeze Authority (Biar gak bisa nge-freeze wallet orang)
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
 
-        updateLog("Step 3: Silakan ACC di Wallet...");
+        updateLog("Step 3: Silakan Approve di Wallet Phantom...");
         transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
         transaction.feePayer = userPubKey;
         transaction.partialSign(mintKey);
         
-        const signed = await (window.phantom?.solana || window.solana).signTransaction(transaction);
+        const provider = window.phantom?.solana || window.solana;
+        const signed = await provider.signTransaction(transaction);
         const signature = await connection.sendRawTransaction(signed.serialize());
+        
+        updateLog("Step 4: Menunggu konfirmasi jaringan...");
         await connection.confirmTransaction(signature);
         
-        updateLog(`BERHASIL! CA: ${mintKey.publicKey.toBase58()}`);
-        alert("Token Berhasil Dibuat!");
+        updateLog(`<b style='color:#14f195'>BERHASIL! CA: ${mintKey.publicKey.toBase58()}</b>`);
+        alert("Token Sukses Launch!\nCA: " + mintKey.publicKey.toBase58());
+        window.open(`https://solscan.io/token/${mintKey.publicKey.toBase58()}`, '_blank');
+
     } catch (err) {
-        updateLog("Gagal: " + err.message);
-        alert("Error: " + err.message);
+        updateLog("<span style='color:red'>Gagal: " + err.message + "</span>");
+        alert("Gagal: " + err.message);
+    } finally {
+        const btn = document.getElementById('btnCreate');
+        btn.disabled = false; btn.innerText = "LAUNCH TOKEN (0.3 SOL)";
     }
 };
 </script>
