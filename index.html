@@ -106,19 +106,18 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
 }
 
 document.getElementById('btnCreate').onclick = async () => {
-    // 1. Deteksi Library dengan Fallback (Sesuai Foto Error)
+    // FIX: Langsung arahkan ke namespace iife yang benar
     const web3 = window.solanaWeb3;
-    const spl = window.splToken || window.solanaSplToken || (window.splToken ? window.splToken : null);
+    const spl = window.splToken; 
     const mpl = window.mplTokenMetadata;
 
     if (!web3 || !spl || !mpl) {
-        alert("Sabar Bro, library Solana lagi loading... Coba klik lagi dalam 3 detik.");
+        alert("Library belum siap. Tunggu bentar Bro.");
         return;
     }
 
     if (isLaunching) return;
 
-    // 2. Ambil semua input
     const name = document.getElementById('name').value.trim();
     const symbol = document.getElementById('symbol').value.trim();
     const desc = document.getElementById('desc').value.trim();
@@ -128,7 +127,6 @@ document.getElementById('btnCreate').onclick = async () => {
     const tw = document.getElementById('twitter').value.trim();
     const tg = document.getElementById('telegram').value.trim();
 
-    // 3. Validasi Input
     if (!userPubKey) return alert("Hubungkan Wallet Phantom dulu!");
     if (!name || !symbol || !supplyRaw || !logoFile) return alert("Wajib isi: Nama, Simbol, Supply, dan Logo!");
 
@@ -149,52 +147,49 @@ document.getElementById('btnCreate').onclick = async () => {
         updateLog("Step 2: Menyiapkan Transaksi Blockchain...");
         const mintKey = web3.Keypair.generate();
         const transaction = new web3.Transaction();
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = userPubKey;
-
+        
         // A. Transfer Fee & Buat Account Mint
         transaction.add(
             web3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new web3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * web3.LAMPORTS_PER_SOL }),
             web3.SystemProgram.createAccount({
                 fromPubkey: userPubKey,
                 newAccountPubkey: mintKey.publicKey,
-                space: 82,
-                lamports: await connection.getMinimumBalanceForRentExemption(82),
+                space: spl.MINT_SIZE,
+                lamports: await connection.getMinimumBalanceForRentExemption(spl.MINT_SIZE),
                 programId: spl.TOKEN_PROGRAM_ID
             }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // B. Tambahkan Metadata Metaplex (Agar Logo & Nama Muncul)
+        // B. Metadata Metaplex
         const [metadataPDA] = web3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
             METADATA_PROGRAM_ID
         );
 
-        if (mpl) {
-            transaction.add(mpl.createCreateMetadataAccountV3Instruction(
-                { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
-                { createMetadataAccountV3Args: {
-                    data: { name, symbol, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null },
-                    isMutable: false,
-                    collectionDetails: null
-                } }
-            ));
-        }
+        transaction.add(mpl.createCreateMetadataAccountV3Instruction(
+            { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
+            { createMetadataAccountV3Args: {
+                data: { name, symbol, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null },
+                isMutable: false, collectionDetails: null
+            } }
+        ));
 
-        // C. Buat ATA & Mint Supply ke Wallet User
+        // C. Buat ATA & Mint Supply
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
             spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal * (BigInt(10) ** BigInt(decimals))),
             
-            // D. Revoke Authority (Rug-Proof: Mint & Freeze dimatikan)
+            // D. Revoke Authority (Rug-Proof)
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
 
-        updateLog("Step 3: Silakan ACC di Wallet Phantom lo...");
+        updateLog("Step 3: Silakan ACC di Wallet lo...");
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = userPubKey;
         transaction.partialSign(mintKey);
         
         const provider = window?.phantom?.solana || window?.solana;
@@ -206,7 +201,7 @@ document.getElementById('btnCreate').onclick = async () => {
         
         updateLog(`<b style="color:#14f195">BERHASIL!</b>`);
         updateLog(`CA: ${mintKey.publicKey.toBase58()}`);
-        alert("GOKIL! Token Berhasil Dibuat.\nCA: " + mintKey.publicKey.toBase58());
+        alert("Token Berhasil Dibuat!\nCA: " + mintKey.publicKey.toBase58());
         window.open(`https://solscan.io/token/${mintKey.publicKey.toBase58()}`, '_blank');
 
     } catch (err) {
