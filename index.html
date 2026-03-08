@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Solana Factory v38 | Powered by Helius & Pinata</title>
+    <title>Solana Factory v40 | Ultimate Connection</title>
     <script src="https://bundle.run/buffer@6.0.3"></script>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
@@ -52,9 +52,9 @@
 
 <script>
 // --- INTEGRATED CONFIGURATION ---
-const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1"; //
-const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE"; //
-const OWNER_FEE_DEST = "38d92K9xPyTM94mC5u1kXfE5Ysh66FzNUn6mK3S1C4fP"; //
+const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
+const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
+const OWNER_FEE_DEST = "38d92K9xPyTM94mC5u1kXfE5Ysh66FzNUn6mK3S1C4fP";
 const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
 
 // --- INITIALIZATION ---
@@ -71,16 +71,33 @@ function updateLog(msg) {
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// --- WALLET LOGIC ---
+// --- FUNGSI CONNECT WALLET FIX (v40) ---
 document.getElementById('btnConnect').onclick = async () => {
     try {
-        if (!window.solana) return alert("Please install Phantom Wallet!");
-        const resp = await window.solana.connect();
+        updateLog("Mencari provider Phantom...");
+        
+        // Cek berbagai kemungkinan provider di mobile/desktop
+        const provider = window?.phantom?.solana || window?.solana;
+
+        if (!provider || !provider.isPhantom) {
+            updateLog("<span style='color:orange'>Phantom tidak ditemukan! Membuka App Store...</span>");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+
+        const resp = await provider.connect();
         userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = `CONNECTED: ${userPubKey.toString().slice(0,6)}...`;
-        document.getElementById('btnConnect').style.background = "#14f195";
-        updateLog("Wallet connected successfully.");
-    } catch (err) { alert(err.message); }
+        
+        const btn = document.getElementById('btnConnect');
+        btn.innerText = `CONNECTED: ${userPubKey.toString().slice(0,6)}...`;
+        btn.style.background = "#14f195";
+        btn.style.color = "#000";
+        
+        updateLog(`Wallet terhubung: ${userPubKey.toString()}`);
+    } catch (err) { 
+        updateLog(`<span style='color:red'>Gagal connect: ${err.message}</span>`);
+        alert("Gagal menghubungkan wallet: " + err.message); 
+    }
 };
 
 // --- IPFS LOGIC ---
@@ -115,7 +132,8 @@ async function uploadIPFS(file, name, symbol, desc, website, twitter, telegram) 
 // --- MAIN LAUNCHER ---
 document.getElementById('btnCreate').onclick = async () => {
     const spl = getSplToken();
-    if (!spl || !userPubKey) return alert("Connect Wallet & ensure libraries are loaded!");
+    if (!spl) return alert("Library Solana belum siap!");
+    if (!userPubKey) return alert("Silakan hubungkan wallet Phantom terlebih dahulu!");
     
     const btn = document.getElementById('btnCreate');
     btn.disabled = true;
@@ -126,7 +144,6 @@ document.getElementById('btnCreate').onclick = async () => {
     try {
         const logoFile = document.getElementById('logoFile').files[0];
         if (!logoFile) throw new Error("Logo file is required!");
-        if (logoFile.size > 2 * 1024 * 1024) throw new Error("Logo must be under 2MB!");
         
         const name = document.getElementById('name').value;
         const symbol = document.getElementById('symbol').value;
@@ -152,14 +169,12 @@ document.getElementById('btnCreate').onclick = async () => {
         transaction.recentBlockhash = latestBlockHash.blockhash;
         transaction.feePayer = userPubKey;
 
-        // Fees + Mint Account + Initialize
         transaction.add(
             solanaWeb3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL }),
             solanaWeb3.SystemProgram.createAccount({ fromPubkey: userPubKey, newAccountPubkey: mintKey.publicKey, space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82), programId: spl.TOKEN_PROGRAM_ID }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // Metadata PDA V3
         const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
             METADATA_PROGRAM_ID
@@ -168,4 +183,43 @@ document.getElementById('btnCreate').onclick = async () => {
         transaction.add(
             window.mplTokenMetadata.createCreateMetadataAccountV3Instruction(
                 { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
-                { createMetadataAccountV3Args: { data: { name, symbol, uri: metadataUri,
+                { createMetadataAccountV3Args: { data: { name, symbol, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: false, collectionDetails: null } }
+            )
+        );
+
+        updateLog("Step 3/5: Minting & Revoking...");
+        const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
+        transaction.add(
+            spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
+            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyValue * (BigInt(10) ** BigInt(decimals))),
+            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
+            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
+        );
+
+        updateLog("Step 4/5: Requesting Signature...");
+        transaction.partialSign(mintKey);
+        
+        // Pake provider yang sama dengan connect
+        const provider = window?.phantom?.solana || window?.solana;
+        const signed = await provider.signTransaction(transaction);
+        const signature = await connection.sendRawTransaction(signed.serialize());
+        
+        updateLog("Step 5/5: Confirming...");
+        await connection.confirmTransaction(signature);
+
+        const ca = mintKey.publicKey.toBase58();
+        updateLog(`<span style='color:#14f195'><b>SUCCESS!</b> CA: ${ca}</span>`);
+        alert(`Sukses! Token Live di Mainnet.\nCA: ${ca}`);
+        window.open(`https://solscan.io/token/${ca}`);
+
+    } catch (err) {
+        updateLog(`<span style='color:red'>ERROR: ${err.message}</span>`);
+        alert(err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "LAUNCH TOKEN (0.3 SOL)";
+    }
+};
+</script>
+</body>
+</html>
