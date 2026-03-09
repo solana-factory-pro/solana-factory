@@ -260,6 +260,7 @@
         let connection = null;
         let userPublicKey = null;
         let logoFileObject = null; // Stores the File object if uploaded
+        let objectUrlForPreview = null; // Stores the object URL for preview image
         let mintRentLamports = 0;
         let metadataRentLamports = 0;
 
@@ -360,15 +361,15 @@
                 connectBtn.disabled = true;
                 
                 const balance = await connection.getBalance(userPublicKey);
-                solBalance.textContent = `${(balance / SolanaWeb3.LAMPPORTS_PER_SOL).toFixed(4)} SOL`;
+                solBalance.textContent = `${(balance / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
                 
                 // Calculate mint rent and metadata rent
                 mintRentLamports = await connection.getMinimumBalanceForRentExemption(SolanaWeb3.Token.MintLayout.span);
                 metadataRentLamports = await getMetadataRent(connection);
                 
                 // Update fee display with calculated rents
-                mintRentDisplay.textContent = (mintRentLamports / SolanaWeb3.LAMPPORTS_PER_SOL).toFixed(5) + ' SOL';
-                metadataRentDisplay.textContent = (metadataRentLamports / SolanaWeb3.LAMPPORTS_PER_SOL).toFixed(5) + ' SOL';
+                mintRentDisplay.textContent = (mintRentLamports / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL';
+                metadataRentDisplay.textContent = (metadataRentLamports / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL';
                 gasFeeDisplay.textContent = `~${ESTIMATED_GAS_FEE_SOL.toFixed(5)} SOL`;
                 
                 updateFeeDisplay(); // Recalculate total cost and button state
@@ -386,36 +387,52 @@
             }
         });
 
-        // FILE UPLOAD HANDLER
+        // FILE UPLOAD HANDLER - FIXED PREVIEW USING URL.createObjectURL()
         document.getElementById('logoFile').addEventListener('change', handleLogoUpload);
 
         function handleLogoUpload(input) {
             const file = input.files[0];
+            const previewImg = document.getElementById('previewImg');
+            const logoPreview = document.getElementById('logoPreview');
+            
+            // Clean up previous object URL if exists
+            if (objectUrlForPreview) {
+                URL.revokeObjectURL(objectUrlForPreview);
+                objectUrlForPreview = null;
+            }
+
             if (file) {
                 if (file.size > 5 * 1024 * 1024) {
                     alert('File is too large. Maximum 5MB.');
                     input.value = ''; // Clear file input selection
                     logoFileObject = null;
-                    document.getElementById('logoPreview').classList.add('hidden');
-                    document.getElementById('previewImg').src = '';
+                    logoPreview.classList.add('hidden');
+                    previewImg.src = '';
                     return;
                 }
                 
                 logoFileObject = file; // Store the File object
                 document.getElementById('tokenLogo').value = ''; // Clear URL input if file is uploaded
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('previewImg').src = e.target.result;
-                    document.getElementById('logoPreview').classList.remove('hidden');
-                    console.log('Logo file selected:', logoFileObject.name, 'MIME type:', logoFileObject.type);
+                // Create preview using URL.createObjectURL() - NO CORS ISSUES
+                objectUrlForPreview = URL.createObjectURL(file);
+                previewImg.onload = function() {
+                    // Release object URL after image loads to free memory
+                    URL.revokeObjectURL(objectUrlForPreview);
+                    objectUrlForPreview = null;
                 };
-                reader.readAsDataURL(file); // Read as Data URL for preview
+                previewImg.src = objectUrlForPreview;
+                logoPreview.classList.remove('hidden');
+                console.log('Logo file selected:', logoFileObject.name, 'MIME type:', logoFileObject.type, 'Size:', file.size, 'bytes');
             } else {
                 // If file input is cleared (e.g., user selects then cancels)
                 logoFileObject = null;
-                document.getElementById('logoPreview').classList.add('hidden');
-                document.getElementById('previewImg').src = '';
+                if (objectUrlForPreview) {
+                    URL.revokeObjectURL(objectUrlForPreview);
+                    objectUrlForPreview = null;
+                }
+                logoPreview.classList.add('hidden');
+                previewImg.src = '';
                 console.log('Logo file selection cleared.');
             }
         }
@@ -441,9 +458,14 @@
                 return;
             }
 
-            // NEW IMPROVED LOGO HANDLING AND VALIDATION
+            // --- LOGO VALIDATION AND UPLOAD ---
             let finalLogoUri = '';
             let logoMimeTypeForMetadata = 'image/png'; // Default, will be updated if file is uploaded
+
+            console.log('--- LOGO VALIDATION START ---');
+            console.log('State of tokenLogoUrl (from input field):', tokenLogoUrl);
+            console.log('State of logoFileObject (global variable):', logoFileObject);
+            console.log('--- LOGO VALIDATION END ---');
 
             if (tokenLogoUrl) { // User provided a URL
                 finalLogoUri = tokenLogoUrl;
@@ -451,22 +473,15 @@
                 console.log('Using logo from URL:', finalLogoUri);
             } else if (logoFileObject) { // User provided a file via upload button
                 addProgressStep('Reading logo file for upload...');
-                // Read the file as ArrayBuffer for Pinata upload
-                const fileReaderForUpload = new FileReader();
-                const fileBufferPromise = new Promise((resolve, reject) => {
-                    fileReaderForUpload.onload = (e) => resolve(Buffer.from(e.target.result));
-                    fileReaderForUpload.onerror = (e) => reject(e);
-                    fileReaderForUpload.readAsArrayBuffer(logoFileObject);
-                });
-                const fileBuffer = await fileBufferPromise; // AWAIT THE FILE READING HERE
-                
-                logoMimeTypeForMetadata = logoFileObject.type;
+                // Directly use the File object for upload to Pinata
                 addProgressStep('Uploading logo to IPFS...');
-                finalLogoUri = await uploadToIPFS(fileBuffer, logoFileObject.name, logoFileObject.type);
+                finalLogoUri = await uploadToIPFS(logoFileObject, logoFileObject.name, logoFileObject.type);
+                logoMimeTypeForMetadata = logoFileObject.type;
                 console.log('Final Logo URI (from upload):', finalLogoUri);
                 addProgressStep(`Logo uploaded: ${finalLogoUri.substring(0, 50)}...`);
             } else { // Neither URL nor file provided
                 alert('Please provide a logo URL or upload an image.');
+                createBtn.disabled = false; // Re-enable button on validation failure
                 return;
             }
 
@@ -482,10 +497,10 @@
                     name: tokenName,
                     symbol: tokenSymbol,
                     description: tokenDesc,
-                    image: finalLogoUri, // Use the resolved logo URI
+                    image: finalLogoUri,
                     external_url: websiteUrl || null,
                     properties: {
-                        files: [{ uri: finalLogoUri, type: logoMimeTypeForMetadata }], // Use resolved MIME type
+                        files: [{ uri: finalLogoUri, type: logoMimeTypeForMetadata }],
                         category: 'token',
                         creators: [{
                             address: userPublicKey.toBase58(),
@@ -695,10 +710,10 @@
         });
 
         // HELPER FUNCTIONS
-        async function uploadToIPFS(fileBuffer, filename, mimeType) {
+        async function uploadToIPFS(file, filename, mimeType) {
+            // Directly use File object for FormData - NO CONVERSION NEEDED
             const formData = new FormData();
-            const blob = new Blob([fileBuffer], { type: mimeType });
-            formData.append('file', blob, filename);
+            formData.append('file', file, filename);
 
             const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
                 method: 'POST',
@@ -780,14 +795,14 @@
             }
             // Set initial displays
             baseFeeDisplay.textContent = BASE_SERVICE_FEE_SOL.toFixed(5) + ' SOL';
-            revokeMintFeeDisplay.textContent = '0.00000 SOL'; // Initial state
-            revokeFreezeFeeDisplay.textContent = '0.00000 SOL'; // Initial state
+            revokeMintFeeDisplay.textContent = '0.00000 SOL';
+            revokeFreezeFeeDisplay.textContent = '0.00000 SOL';
             gasFeeDisplay.textContent = `~${ESTIMATED_GAS_FEE_SOL.toFixed(5)} SOL`;
             mintRentDisplay.textContent = 'Connect wallet to calculate...';
             metadataRentDisplay.textContent = 'Connect wallet to calculate...';
             totalMinimalDisplay.textContent = 'Connect wallet to calculate...';
             
-            updateFeeDisplay(); // Call to set initial total based on checkbox state
+            updateFeeDisplay();
         });
     </script>
 </body>
