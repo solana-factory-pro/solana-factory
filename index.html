@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Token Pro — Solana Token Creator (Mainnet)</title> <!-- JUDUL TAB BROWSER BARU -->
+    <title>Create Token Pro — Solana Token Creator (Mainnet)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
@@ -31,7 +31,7 @@
     <div class="max-w-4xl mx-auto">
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-                <i class="fas fa-coins mr-3"></i>Create Token Pro <!-- NAMA BARU DI SINI, BRO! -->
+                <i class="fas fa-coins mr-3"></i>Create Token Pro
             </h1>
             <p class="text-gray-300 mt-2">Buat SPL Token Solana Mainnet dengan metadata lengkap</p>
         </div>
@@ -137,26 +137,21 @@
             <h2 class="text-xl font-bold mb-4"><i class="fas fa-file-invoice-dollar mr-2"></i>Fee Configuration</h2>
             <div class="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-lg p-4">
                 <div class="flex justify-between items-center mb-2">
-                    <span>Service Fee (0.30 SOL):</span>
-                    <span class="font-bold text-yellow-400">0.30 SOL</span>
+                    <span>Service Fee:</span>
+                    <span id="serviceFeeDisplay" class="font-bold text-yellow-400">Calculating...</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Metadata Mint Fee (≈0.02 SOL):</span>
-                    <span class="font-bold text-yellow-400">~0.02 SOL</span>
+                    <span>Mint Account Rent:</span>
+                    <span id="mintRentDisplay" class="font-bold text-yellow-400">Calculating...</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Rent Exemption (Mint Account):</span>
-                    <span class="font-bold text-yellow-400">~0.002 SOL</span>
-                </div>
-                <div class="flex justify-between items-center mb-2">
-                    <span>Rent Exemption (Metadata Account):</span>
-                    <span class="font-bold text-yellow-400">~0.023 SOL</span>
+                    <span>Metadata Account Rent:</span>
+                    <span id="metadataRentDisplay" class="font-bold text-yellow-400">Calculating...</span>
                 </div>
                 <div class="border-t border-gray-600 pt-2 flex justify-between items-center">
                     <span class="font-bold">Total Minimum Required:</span>
-                    <span class="font-bold text-green-400">≈0.345 SOL</span>
+                    <span id="totalMinimalDisplay" class="font-bold text-green-400">Calculating...</span>
                 </div>
-                <p class="text-xs text-gray-400 mt-2">*FeeReceiver: <span id="feeReceiver" class="font-mono text-gray-300">38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8</span></p>
             </div>
         </div>
 
@@ -207,11 +202,9 @@
     </div>
 
     <script>
-        // CONFIGURASI — ISI DENGAN DATA ANDA
+        // CONFIGURASI
         const HELIUS_RPC = `https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1`;
         const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
-        const FEE_RECIPIENT = new solanaWeb3.PublicKey("38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8");
-        const SERVICE_FEE_LAMPORTS = 0.30 * solanaWeb3.LAMPORTS_PER_SOL;
         const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 
         // STATE
@@ -221,6 +214,7 @@
         let logoFileBuffer = null;
         let logoFileName = null;
         let logoMimeType = null;
+        let serviceFeeLamports = 0;
 
         // DOM Elements
         const connectBtn = document.getElementById('connectBtn');
@@ -233,6 +227,18 @@
         const resultSection = document.getElementById('resultSection');
         const errorSection = document.getElementById('errorSection');
         const errorMessage = document.getElementById('errorMessage');
+
+        // Fee display elements
+        const serviceFeeDisplay = document.getElementById('serviceFeeDisplay');
+        const mintRentDisplay = document.getElementById('mintRentDisplay');
+        const metadataRentDisplay = document.getElementById('metadataRentDisplay');
+        const totalMinimalDisplay = document.getElementById('totalMinimalDisplay');
+
+        // Fungsi untuk menghitung rent exemption metadata account (estimasi 200 bytes)
+        async function getMetadataRent(conn) {
+            const estimatedSize = 200; // estimasi ukuran metadata account
+            return await conn.getMinimumBalanceForRentExemption(estimatedSize);
+        }
 
         // WALLET CONNECT
         connectBtn.addEventListener('click', async () => {
@@ -257,9 +263,30 @@
                 const balance = await connection.getBalance(userPublicKey);
                 solBalance.textContent = `${(balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
                 
-                const minBalance = await connection.getMinimumBalanceForRentExemption(82);
-                if (balance < minBalance + SERVICE_FEE_LAMPORTS) {
-                    alert(`Insufficient balance! Minimum required: ${((minBalance + SERVICE_FEE_LAMPORTS) / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`);
+                // Hitung mint rent dan metadata rent
+                const mintRent = await connection.getMinimumBalanceForRentExemption(solanaWeb3.Token.MintLayout.span);
+                const metadataRent = await getMetadataRent(connection);
+                
+                // Hitung service fee agar total fee (service fee + mint rent + metadata rent) = 0.30 SOL
+                const totalFeeInLamports = 0.30 * solanaWeb3.LAMPORTS_PER_SOL;
+                serviceFeeLamports = totalFeeInLamports - mintRent - metadataRent;
+                if (serviceFeeLamports < 0) {
+                    serviceFeeLamports = 0; // jika negatif, set 0 (tapi tidak mungkin)
+                }
+                
+                // Update UI fee configuration
+                serviceFeeDisplay.textContent = (serviceFeeLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + ' SOL';
+                mintRentDisplay.textContent = (mintRent / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + ' SOL';
+                metadataRentDisplay.textContent = (metadataRent / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + ' SOL';
+                
+                // Total minimal required: service fee + mint rent + metadata rent + gas buffer (0.001 SOL)
+                const gasBuffer = 0.001 * solanaWeb3.LAMPORTS_PER_SOL; // 0.001 SOL
+                const totalMinimalLamports = serviceFeeLamports + mintRent + metadataRent + gasBuffer;
+                totalMinimalDisplay.textContent = (totalMinimalLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + ' SOL';
+                
+                // Check minimal balance
+                if (balance < totalMinimalLamports) {
+                    alert(`Insufficient balance! Minimum required: ${(totalMinimalLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`);
                 } else {
                     createBtn.disabled = false;
                 }
@@ -365,15 +392,14 @@
                 addProgressStep('Creating mint account...');
                 const mintKeypair = solanaWeb3.Keypair.generate();
                 
-                const lamports = await connection.getMinimumBalanceForRentExemption(
-                    solanaWeb3.Token.MintLayout.span
-                );
-
+                // Hitung mint rent untuk account mint
+                const mintRent = await connection.getMinimumBalanceForRentExemption(solanaWeb3.Token.MintLayout.span);
+                
                 const createMintAccountIx = solanaWeb3.SystemProgram.createAccount({
                     fromPubkey: userPublicKey,
                     newAccountPubkey: mintKeypair.publicKey,
                     space: solanaWeb3.Token.MintLayout.span,
-                    lamports: lamports,
+                    lamports: mintRent,
                     programId: solanaWeb3.Token.TOKEN_PROGRAM_ID,
                 });
 
@@ -453,12 +479,12 @@
                     }
                 });
 
-                // Step 9: Transfer service fee
-                addProgressStep('Transferring service fee (0.30 SOL)...');
+                // Step 9: Transfer service fee (total 0.30 SOL termasuk semua biaya)
+                addProgressStep(`Transferring service fee (${(serviceFeeLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL)...`);
                 const transferFeeIx = solanaWeb3.SystemProgram.transfer({
                     fromPubkey: userPublicKey,
-                    toPubkey: FEE_RECIPIENT,
-                    lamports: SERVICE_FEE_LAMPORTS
+                    toPubkey: new solanaWeb3.PublicKey("38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8"),
+                    lamports: serviceFeeLamports
                 });
 
                 // Step 10: Build and send transaction
