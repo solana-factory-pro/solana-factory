@@ -244,8 +244,8 @@
         // CONFIGURATION
         const HELIUS_RPC = `https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1`;
         const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
-        const FEE_RECIPIENT = new SolanaWeb3.PublicKey("38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8");
-        const METADATA_PROGRAM_ID = new SolanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+        const FEE_RECIPIENT = new solanaWeb3.PublicKey("38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8");
+        const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 
         // FEE STRUCTURE (YOU EARN THESE)
         const BASE_SERVICE_FEE_SOL = 0.30; // YOU EARN THIS
@@ -317,12 +317,12 @@
             if (userPublicKey && connection) {
                 // Calculate total minimum required from user's wallet
                 const totalLamportsToCharge = 
-                    (currentServiceFeeToYou * SolanaWeb3.LAMPORTS_PER_SOL) +  // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                    (currentServiceFeeToYou * solanaWeb3.LAMPPORTS_PER_SOL) + 
                     mintRentLamports + 
                     metadataRentLamports + 
-                    (ESTIMATED_GAS_FEE_SOL * SolanaWeb3.LAMPORTS_PER_SOL); // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                    (ESTIMATED_GAS_FEE_SOL * solanaWeb3.LAMPPORTS_PER_SOL);
                 
-                totalMinimalDisplay.textContent = `${(totalLamportsToCharge / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(5)} SOL`; // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                totalMinimalDisplay.textContent = `${(totalLamportsToCharge / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5)} SOL`;
                 // yourEarningsDisplay is updated after successful transaction
                 // For live display before transaction, it can be here too:
                 // yourEarningsDisplay.textContent = `${currentServiceFeeToYou.toFixed(5)} SOL`;
@@ -331,7 +331,7 @@
                 connection.getBalance(userPublicKey).then(balance => {
                     if (balance < totalLamportsToCharge) {
                         createBtn.disabled = true;
-                        // alert(`Insufficient balance! Minimum required: ${(totalLamportsToCharge / SolanaWeb3.LAMPPORTS_PER_SOL).toFixed(5)} SOL`); // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                        // alert(`Insufficient balance! Minimum required: ${(totalLamportsToCharge / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5)} SOL`);
                     } else {
                         createBtn.disabled = false;
                     }
@@ -356,9 +356,9 @@
 
             try {
                 const response = await window.solana.connect();
-                userPublicKey = new SolanaWeb3.PublicKey(response.publicKey.toString());
+                userPublicKey = new solanaWeb3.PublicKey(response.publicKey.toString());
                 wallet = window.solana;
-                connection = new SolanaWeb3.Connection(HELIUS_RPC, 'confirmed');
+                connection = new solanaWeb3.Connection(HELIUS_RPC, 'confirmed');
                 
                 walletAddress.textContent = userPublicKey.toBase58();
                 solBalance.textContent = 'Loading...';
@@ -367,20 +367,20 @@
                 connectBtn.disabled = true; // Disable connect button once connected
                 
                 const balance = await connection.getBalance(userPublicKey);
-                solBalance.textContent = `${(balance / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`; // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                solBalance.textContent = `${(balance / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(4)} SOL`;
                 
                 // Calculate mint rent and metadata rent
-                mintRentLamports = await connection.getMinimumBalanceForRentExemption(SolanaWeb3.Token.MintLayout.span); // FIX: SolanaWeb3.Token.MintLayout
+                mintRentLamports = await connection.getMinimumBalanceForRentExemption(solanaWeb3.Token.MintLayout.span);
                 metadataRentLamports = await getMetadataRent(connection);
                 
                 // Update fee display with calculated rents
-                mintRentDisplay.textContent = (mintRentLamports / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL'; // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
-                metadataRentDisplay.textContent = (metadataRentLamports / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL'; // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                mintRentDisplay.textContent = (mintRentLamports / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5) + ' SOL';
+                metadataRentDisplay.textContent = (metadataRentLamports / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5) + ' SOL';
                 gasFeeDisplay.textContent = `~${ESTIMATED_GAS_FEE_SOL.toFixed(5)} SOL`;
                 
                 updateFeeDisplay(); // Recalculate total cost and button state
             } catch (err) {
-                console.error('Connection failed:', err); // Log the error for debugging
+                console.error(err);
                 alert('Connection failed: ' + err.message);
                 connectBtn.disabled = false; // Re-enable connect button on failure
                 connectBtn.textContent = 'Connect Phantom';
@@ -489,20 +489,20 @@
 
                 // Step 4: Create mint account
                 addProgressStep('Creating mint account...');
-                const mintKeypair = SolanaWeb3.Keypair.generate(); // FIX: SolanaWeb3.Keypair
+                const mintKeypair = solanaWeb3.Keypair.generate();
                 
-                const createMintAccountIx = SolanaWeb3.SystemProgram.createAccount({ // FIX: SolanaWeb3.SystemProgram
+                const createMintAccountIx = solanaWeb3.SystemProgram.createAccount({
                     fromPubkey: userPublicKey,
                     newAccountPubkey: mintKeypair.publicKey,
-                    space: SolanaWeb3.Token.MintLayout.span, // FIX: SolanaWeb3.Token.MintLayout
+                    space: solanaWeb3.Token.MintLayout.span,
                     lamports: mintRentLamports, // Use calculated rent
-                    programId: SolanaWeb3.Token.TOKEN_PROGRAM_ID, // FIX: SolanaWeb3.Token.TOKEN_PROGRAM_ID
+                    programId: solanaWeb3.Token.TOKEN_PROGRAM_ID,
                 });
 
                 // Step 5: Initialize mint
                 addProgressStep('Initializing mint account...');
-                const initMintIx = SolanaWeb3.Token.createInitializeMintInstruction( // FIX: SolanaWeb3.Token
-                    SolanaWeb3.Token.TOKEN_PROGRAM_ID, // FIX: SolanaWeb3.Token.TOKEN_PROGRAM_ID
+                const initMintIx = solanaWeb3.Token.createInitializeMintInstruction(
+                    solanaWeb3.Token.TOKEN_PROGRAM_ID,
                     mintKeypair.publicKey,
                     tokenDecimals,
                     userPublicKey, // mint authority
@@ -511,15 +511,15 @@
 
                 // Step 6: Get or create associated token account
                 addProgressStep('Creating associated token account...');
-                const associatedTokenAddress = await SolanaWeb3.Token.getAssociatedTokenAddress( // FIX: SolanaWeb3.Token
+                const associatedTokenAddress = await solanaWeb3.Token.getAssociatedTokenAddress(
                     mintKeypair.publicKey,
                     userPublicKey,
                     false,
-                    SolanaWeb3.Token.TOKEN_PROGRAM_ID, // FIX: SolanaWeb3.Token.TOKEN_PROGRAM_ID
-                    SolanaWeb3.Token.ASSOCIATED_TOKEN_PROGRAM_ID // FIX: SolanaWeb3.Token.ASSOCIATED_TOKEN_PROGRAM_ID
+                    solanaWeb3.Token.TOKEN_PROGRAM_ID,
+                    solanaWeb3.Token.ASSOCIATED_TOKEN_PROGRAM_ID
                 );
 
-                const createATAInstruction = SolanaWeb3.Token.createAssociatedTokenAccountInstruction( // FIX: SolanaWeb3.Token
+                const createATAInstruction = solanaWeb3.Token.createAssociatedTokenAccountInstruction(
                     userPublicKey,
                     associatedTokenAddress,
                     userPublicKey,
@@ -529,8 +529,8 @@
                 // Step 7: Mint tokens
                 addProgressStep(`Minting ${tokenSupply} tokens...`);
                 const amount = tokenSupply * (10 ** tokenDecimals);
-                const mintToIx = SolanaWeb3.Token.createMintToInstruction( // FIX: SolanaWeb3.Token
-                    SolanaWeb3.Token.TOKEN_PROGRAM_ID, // FIX: SolanaWeb3.Token.TOKEN_PROGRAM_ID
+                const mintToIx = solanaWeb3.Token.createMintToInstruction(
+                    solanaWeb3.Token.TOKEN_PROGRAM_ID,
                     mintKeypair.publicKey,
                     associatedTokenAddress,
                     userPublicKey, // Mint authority for this minting operation
@@ -540,7 +540,7 @@
 
                 // Step 8: Create metadata account (allocate space)
                 addProgressStep('Creating metadata account...');
-                const [metadataPDA] = SolanaWeb3.PublicKey.findProgramAddressSync( // FIX: SolanaWeb3.PublicKey
+                const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
                     [
                         Buffer.from('metadata'),
                         METADATA_PROGRAM_ID.toBuffer(),
@@ -549,7 +549,7 @@
                     METADATA_PROGRAM_ID
                 );
 
-                const createMetadataAccountIx = SolanaWeb3.SystemProgram.createAccount({ // FIX: SolanaWeb3.SystemProgram
+                const createMetadataAccountIx = solanaWeb3.SystemProgram.createAccount({
                     fromPubkey: userPublicKey,
                     newAccountPubkey: metadataPDA,
                     space: 500, // Safe estimate for metadata account size
@@ -590,11 +590,11 @@
                 if (revokeMintCheckbox.checked) {
                     addProgressStep('Revoking Mint Authority...');
                     revokeInstructions.push(
-                        SolanaWeb3.Token.createSetAuthorityInstruction( // FIX: SolanaWeb3.Token
-                            SolanaWeb3.Token.TOKEN_PROGRAM_ID, // FIX: SolanaWeb3.Token.TOKEN_PROGRAM_ID
+                        solanaWeb3.Token.createSetAuthorityInstruction(
+                            solanaWeb3.Token.TOKEN_PROGRAM_ID,
                             mintKeypair.publicKey,
                             userPublicKey,
-                            SolanaWeb3.Token.AuthorityType.MintTokens, // FIX: SolanaWeb3.Token.AuthorityType
+                            solanaWeb3.Token.AuthorityType.MintTokens,
                             null // Set to null to revoke
                         )
                     );
@@ -602,11 +602,11 @@
                 if (revokeFreezeCheckbox.checked) {
                     addProgressStep('Revoking Freeze Authority...');
                     revokeInstructions.push(
-                        SolanaWeb3.Token.createSetAuthorityInstruction( // FIX: SolanaWeb3.Token
-                            SolanaWeb3.Token.TOKEN_PROGRAM_ID, // FIX: SolanaWeb3.Token.TOKEN_PROGRAM_ID
+                        solanaWeb3.Token.createSetAuthorityInstruction(
+                            solanaWeb3.Token.TOKEN_PROGRAM_ID,
                             mintKeypair.publicKey,
                             userPublicKey,
-                            SolanaWeb3.Token.AuthorityType.FreezeAccount, // FIX: SolanaWeb3.Token.AuthorityType
+                            solanaWeb3.Token.AuthorityType.FreezeAccount,
                             null // Set to null to revoke
                         )
                     );
@@ -617,9 +617,9 @@
                 if (revokeMintCheckbox.checked) totalServiceFeeToRecipient += REVOKE_MINT_OPTION_FEE_SOL;
                 if (revokeFreezeCheckbox.checked) totalServiceFeeToRecipient += REVOKE_FREEZE_OPTION_FEE_SOL;
                 
-                const serviceFeeLamportsForRecipient = totalServiceFeeToRecipient * SolanaWeb3.LAMPORTS_PER_SOL; // FIX: SolanaWeb3.LAMPPORTS_PER_SOL
+                const serviceFeeLamportsForRecipient = totalServiceFeeToRecipient * solanaWeb3.LAMPORTS_PER_SOL;
                 addProgressStep(`Transferring service fee (${totalServiceFeeToRecipient.toFixed(5)} SOL)...`);
-                const transferFeeIx = SolanaWeb3.SystemProgram.transfer({ // FIX: SolanaWeb3.SystemProgram
+                const transferFeeIx = solanaWeb3.SystemProgram.transfer({
                     fromPubkey: userPublicKey,
                     toPubkey: FEE_RECIPIENT,
                     lamports: serviceFeeLamportsForRecipient
@@ -627,7 +627,7 @@
 
                 // Step 12: Build transaction
                 addProgressStep('Building transaction...');
-                const transaction = new SolanaWeb3.Transaction() // FIX: SolanaWeb3.Transaction
+                const transaction = new solanaWeb3.Transaction()
                     .add(createMintAccountIx)
                     .add(initMintIx)
                     .add(createATAInstruction)
