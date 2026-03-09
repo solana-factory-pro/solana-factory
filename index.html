@@ -131,33 +131,44 @@
                     <input type="url" id="websiteUrl" class="w-full bg-gray-800/50 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="https://yourproject.com">
                 </div>
             </div>
+
+            <div class="mt-6 flex flex-col space-y-4">
+                <div class="flex items-center justify-between">
+                    <label for="revokeMint" class="text-sm font-medium">Revoke Mint Authority (+0.05 SOL)</label>
+                    <input type="checkbox" id="revokeMint" class="h-5 w-5 rounded form-checkbox text-purple-600 border-gray-600 bg-gray-800/50 focus:ring-purple-500" checked>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label for="revokeFreeze" class="text-sm font-medium">Revoke Freeze Authority (+0.05 SOL)</label>
+                    <input type="checkbox" id="revokeFreeze" class="h-5 w-5 rounded form-checkbox text-purple-600 border-gray-600 bg-gray-800/50 focus:ring-purple-500" checked>
+                </div>
+            </div>
         </div>
 
         <div class="glass rounded-xl p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4"><i class="fas fa-file-invoice-dollar mr-2"></i>Fee Configuration</h2>
+            <h2 class="text-xl font-bold mb-4"><i class="fas fa-file-invoice-dollar mr-2"></i>Pricing Breakdown</h2>
             <div class="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-lg p-4">
                 <div class="flex justify-between items-center mb-2">
-                    <span>Service Fee (to recipient):</span>
-                    <span id="serviceFeeDisplay" class="font-bold text-yellow-400">0.15000 SOL</span>
+                    <span>Base Fee:</span>
+                    <span id="baseFeeDisplay" class="font-bold text-yellow-400">0.30000 SOL</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Mint Account Rent:</span>
-                    <span id="mintRentDisplay" class="font-bold text-yellow-400">Connect wallet to calculate...</span>
+                    <span>Revoke Mint Authority:</span>
+                    <span id="revokeMintFeeDisplay" class="font-bold text-yellow-400">+0.05000 SOL</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Metadata Account Rent:</span>
-                    <span id="metadataRentDisplay" class="font-bold text-yellow-400">Connect wallet to calculate...</span>
+                    <span>Revoke Freeze Authority:</span>
+                    <span id="revokeFreezeFeeDisplay" class="font-bold text-yellow-400">+0.05000 SOL</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
                     <span>Estimated Gas Fee:</span>
                     <span id="gasFeeDisplay" class="font-bold text-yellow-400">~0.00100 SOL</span>
                 </div>
                 <div class="border-t border-gray-600 pt-2 flex justify-between items-center">
-                    <span class="font-bold">Total Minimum Required:</span>
-                    <span id="totalMinimalDisplay" class="font-bold text-green-400">Connect wallet to calculate...</span>
+                    <span class="font-bold text-lg">Total Cost:</span>
+                    <span id="totalCostDisplay" class="font-bold text-green-400 text-lg">Connecting wallet to calculate...</span>
                 </div>
                 <p class="text-xs text-gray-400 mt-2">
-                    *Total minimum required is the amount your wallet needs for all transaction costs.
+                    *The total cost is the amount your wallet needs for all transaction costs.
                 </p>
             </div>
         </div>
@@ -214,7 +225,11 @@
         const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
         const FEE_RECIPIENT = new solanaWeb3.PublicKey("38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8");
         const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
-        const FIXED_SERVICE_FEE_SOL = 0.15; // User's requested fixed service fee
+
+        const BASE_SERVICE_FEE_SOL = 0.30;
+        const REVOKE_MINT_OPTION_FEE_SOL = 0.05;
+        const REVOKE_FREEZE_OPTION_FEE_SOL = 0.05;
+        const ESTIMATED_GAS_FEE_SOL = 0.001; // This is a buffer, actual gas varies slightly
 
         // STATE
         let wallet = null;
@@ -225,7 +240,6 @@
         let logoMimeType = null;
         let mintRentLamports = 0;
         let metadataRentLamports = 0;
-        const gasBufferLamports = 0.001 * solanaWeb3.LAMPORTS_PER_SOL; // Estimated gas fee buffer
 
         // DOM Elements
         const connectBtn = document.getElementById('connectBtn');
@@ -240,17 +254,60 @@
         const errorMessage = document.getElementById('errorMessage');
 
         // Fee display elements
-        const serviceFeeDisplay = document.getElementById('serviceFeeDisplay');
-        const mintRentDisplay = document.getElementById('mintRentDisplay');
-        const metadataRentDisplay = document.getElementById('metadataRentDisplay');
+        const baseFeeDisplay = document.getElementById('baseFeeDisplay');
+        const revokeMintFeeDisplay = document.getElementById('revokeMintFeeDisplay');
+        const revokeFreezeFeeDisplay = document.getElementById('revokeFreezeFeeDisplay');
         const gasFeeDisplay = document.getElementById('gasFeeDisplay');
-        const totalMinimalDisplay = document.getElementById('totalMinimalDisplay');
+        const totalCostDisplay = document.getElementById('totalCostDisplay');
+
+        // Checkboxes
+        const revokeMintCheckbox = document.getElementById('revokeMint');
+        const revokeFreezeCheckbox = document.getElementById('revokeFreeze');
 
         // Function to estimate metadata account rent (approx 200 bytes)
         async function getMetadataRent(conn) {
             const estimatedSize = 200; // estimated size of metadata account
             return await conn.getMinimumBalanceForRentExemption(estimatedSize);
         }
+
+        // Function to update the fee display dynamically
+        function updateFeeDisplay() {
+            let currentTotalServiceFee = BASE_SERVICE_FEE_SOL;
+            if (revokeMintCheckbox.checked) {
+                currentTotalServiceFee += REVOKE_MINT_OPTION_FEE_SOL;
+            }
+            if (revokeFreezeCheckbox.checked) {
+                currentTotalServiceFee += REVOKE_FREEZE_OPTION_FEE_SOL;
+            }
+
+            // Update UI for optional fees
+            revokeMintFeeDisplay.textContent = revokeMintCheckbox.checked ? `+${REVOKE_MINT_OPTION_FEE_SOL.toFixed(5)} SOL` : '0.00000 SOL';
+            revokeFreezeFeeDisplay.textContent = revokeFreezeCheckbox.checked ? `+${REVOKE_FREEZE_OPTION_FEE_SOL.toFixed(5)} SOL` : '0.00000 SOL';
+
+            if (userPublicKey && connection) {
+                // Calculate total minimum required from user's wallet
+                const totalLamportsToCharge = (currentTotalServiceFee * solanaWeb3.LAMPORTS_PER_SOL) + mintRentLamports + metadataRentLamports + (ESTIMATED_GAS_FEE_SOL * solanaWeb3.LAMPPORTS_PER_SOL);
+                totalCostDisplay.textContent = `${(totalLamportsToCharge / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5)} SOL`;
+
+                // Re-check balance if already connected
+                connection.getBalance(userPublicKey).then(balance => {
+                    if (balance < totalLamportsToCharge) {
+                        createBtn.disabled = true;
+                        alert(`Insufficient balance! Minimum required: ${(totalLamportsToCharge / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5)} SOL`);
+                    } else {
+                        createBtn.disabled = false;
+                    }
+                }).catch(console.error);
+            } else {
+                totalCostDisplay.textContent = 'Connect wallet to calculate...';
+                createBtn.disabled = true;
+            }
+        }
+
+        // Event listeners for checkboxes to update fee display
+        revokeMintCheckbox.addEventListener('change', updateFeeDisplay);
+        revokeFreezeCheckbox.addEventListener('change', updateFeeDisplay);
+
 
         // WALLET CONNECT
         connectBtn.addEventListener('click', async () => {
@@ -270,7 +327,7 @@
                 solBalance.textContent = 'Loading...';
                 walletInfo.classList.remove('hidden');
                 connectBtn.textContent = 'Connected';
-                connectBtn.disabled = true;
+                connectBtn.disabled = true; // Disable connect button once connected
                 
                 const balance = await connection.getBalance(userPublicKey);
                 solBalance.textContent = `${(balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
@@ -279,25 +336,14 @@
                 mintRentLamports = await connection.getMinimumBalanceForRentExemption(solanaWeb3.Token.MintLayout.span);
                 metadataRentLamports = await getMetadataRent(connection);
                 
-                // Calculate total minimum required
-                const totalMinimalLamports = (FIXED_SERVICE_FEE_SOL * solanaWeb3.LAMPORTS_PER_SOL) + mintRentLamports + metadataRentLamports + gasBufferLamports;
-                
-                // Update UI fee configuration
-                // serviceFeeDisplay is already set on load, no need to update here unless it's dynamic
-                mintRentDisplay.textContent = (mintRentLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL';
-                metadataRentDisplay.textContent = (metadataRentLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL';
-                // gasFeeDisplay is already set on load, no need to update here unless it's dynamic
-                totalMinimalDisplay.textContent = (totalMinimalLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL';
-                
-                // Check minimal balance
-                if (balance < totalMinimalLamports) {
-                    alert(`Insufficient balance! Minimum required: ${(totalMinimalLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5)} SOL`);
-                } else {
-                    createBtn.disabled = false;
-                }
+                // Update fee display with calculated rents
+                updateFeeDisplay();
             } catch (err) {
                 console.error(err);
                 alert('Connection failed: ' + err.message);
+                connectBtn.disabled = false; // Re-enable connect button on failure
+                connectBtn.textContent = 'Connect Phantom';
+                walletInfo.classList.add('hidden');
             }
         });
 
@@ -315,13 +361,14 @@
                 reader.onload = function(e) {
                     document.getElementById('previewImg').src = e.target.result;
                     document.getElementById('logoPreview').classList.remove('hidden');
-                    document.getElementById('tokenLogo').value = '';
+                    document.getElementById('tokenLogo').value = ''; // Clear URL input if file is uploaded
                     
                     const arrayBuffer = e.target.result;
                     const uint8Array = new Uint8Array(arrayBuffer);
                     logoFileBuffer = Buffer.from(uint8Array);
                     logoFileName = file.name;
                     logoMimeType = file.type;
+                    console.log('Logo file selected:', logoFileName, 'MIME type:', logoMimeType);
                 };
                 reader.readAsArrayBuffer(file);
             }
@@ -329,7 +376,10 @@
 
         // CREATE TOKEN LOGIC
         createBtn.addEventListener('click', async () => {
-            if (!userPublicKey) return;
+            if (!userPublicKey) {
+                alert('Please connect your Phantom wallet first.');
+                return;
+            }
 
             const tokenName = document.getElementById('tokenName').value.trim();
             const tokenSymbol = document.getElementById('tokenSymbol').value.trim();
@@ -362,6 +412,7 @@
                 if (logoFileBuffer) {
                     addProgressStep('Uploading logo to IPFS...');
                     logoUri = await uploadToIPFS(logoFileBuffer, logoFileName, logoMimeType);
+                    console.log('Final Logo URI:', logoUri); // Debugging logo URI
                     addProgressStep(`Logo uploaded: ${logoUri.substring(0, 50)}...`);
                 }
 
@@ -391,6 +442,7 @@
                 // Step 3: Upload metadata to IPFS
                 addProgressStep('Uploading metadata to IPFS...');
                 const metadataUri = await uploadJSONToIPFS(metadata, `${tokenSymbol}-metadata.json`);
+                console.log('Final Metadata URI:', metadataUri); // Debugging metadata URI
                 addProgressStep(`Metadata URI: ${metadataUri.substring(0, 50)}...`);
 
                 // Step 4: Create mint account
@@ -405,14 +457,21 @@
                     programId: solanaWeb3.Token.TOKEN_PROGRAM_ID,
                 });
 
+                // Determine Mint and Freeze Authorities
+                const finalMintAuthority = revokeMintCheckbox.checked ? solanaWeb3.SystemProgram.programId : userPublicKey; // If revoked, set to SystemProgram (non-revocable) or null
+                const finalFreezeAuthority = revokeFreezeCheckbox.checked ? solanaWeb3.SystemProgram.programId : userPublicKey; // If revoked, set to SystemProgram (non-revocable) or null
+                // Note: Setting to SystemProgram.programId effectively revokes it from the user, as the SystemProgram cannot sign. Setting to null is more typical for "irrevocable". Let's use null.
+                const initMintAuthority = userPublicKey; // Initial authority for minting process
+                const initFreezeAuthority = userPublicKey; // Initial authority for freezing process
+
                 // Step 5: Initialize mint
                 addProgressStep('Initializing mint account...');
                 const initMintIx = solanaWeb3.Token.createInitializeMintInstruction(
                     solanaWeb3.Token.TOKEN_PROGRAM_ID,
                     mintKeypair.publicKey,
                     tokenDecimals,
-                    userPublicKey,
-                    userPublicKey // freeze authority
+                    initMintAuthority, // User is initially the mint authority
+                    initFreezeAuthority // User is initially the freeze authority
                 );
 
                 // Step 6: Get or create associated token account
@@ -439,7 +498,7 @@
                     solanaWeb3.Token.TOKEN_PROGRAM_ID,
                     mintKeypair.publicKey,
                     associatedTokenAddress,
-                    userPublicKey,
+                    userPublicKey, // Mint authority for this minting operation
                     [],
                     amount
                 );
@@ -458,7 +517,7 @@
                 const createMetadataIx = mplTokenMetadata.createCreateMetadataAccountV3Instruction({
                     metadata: metadataPDA,
                     mint: mintKeypair.publicKey,
-                    mintAuthority: userPublicKey,
+                    mintAuthority: userPublicKey, // User is initial mint authority for metadata creation
                     payer: userPublicKey,
                     updateAuthority: userPublicKey,
                 }, {
@@ -481,16 +540,51 @@
                     }
                 });
 
-                // Step 9: Transfer service fee (fixed 0.15 SOL)
-                const fixedServiceFeeLamports = FIXED_SERVICE_FEE_SOL * solanaWeb3.LAMPORTS_PER_SOL;
-                addProgressStep(`Transferring service fee (${FIXED_SERVICE_FEE_SOL.toFixed(5)} SOL)...`);
+                // Step 9: Add revoke authority instructions if selected
+                const revokeInstructions = [];
+                if (revokeMintCheckbox.checked) {
+                    addProgressStep('Revoking Mint Authority...');
+                    revokeInstructions.push(
+                        solanaWeb3.Token.createSetAuthorityInstruction(
+                            solanaWeb3.Token.TOKEN_PROGRAM_ID,
+                            mintKeypair.publicKey, // Mint account
+                            userPublicKey,       // Current mint authority
+                            solanaWeb3.Token.AuthorityType.MintTokens,
+                            null // Set to null to revoke
+                        )
+                    );
+                }
+                if (revokeFreezeCheckbox.checked) {
+                    addProgressStep('Revoking Freeze Authority...');
+                    revokeInstructions.push(
+                        solanaWeb3.Token.createSetAuthorityInstruction(
+                            solanaWeb3.Token.TOKEN_PROGRAM_ID,
+                            mintKeypair.publicKey, // Mint account
+                            userPublicKey,       // Current freeze authority
+                            solanaWeb3.Token.AuthorityType.FreezeAccount,
+                            null // Set to null to revoke
+                        )
+                    );
+                }
+
+                // Step 10: Transfer service fees
+                let totalServiceFeeForRecipient = BASE_SERVICE_FEE_SOL;
+                if (revokeMintCheckbox.checked) {
+                    totalServiceFeeForRecipient += REVOKE_MINT_OPTION_FEE_SOL;
+                }
+                if (revokeFreezeCheckbox.checked) {
+                    totalServiceFeeForRecipient += REVOKE_FREEZE_OPTION_FEE_SOL;
+                }
+                const serviceFeeLamportsForRecipient = totalServiceFeeForRecipient * solanaWeb3.LAMPORTS_PER_SOL;
+
+                addProgressStep(`Transferring total service fee (${totalServiceFeeForRecipient.toFixed(5)} SOL)...`);
                 const transferFeeIx = solanaWeb3.SystemProgram.transfer({
                     fromPubkey: userPublicKey,
                     toPubkey: FEE_RECIPIENT, // Your designated recipient address
-                    lamports: fixedServiceFeeLamports
+                    lamports: serviceFeeLamportsForRecipient
                 });
 
-                // Step 10: Build and send transaction
+                // Step 11: Build and send transaction
                 addProgressStep('Building transaction...');
                 const transaction = new solanaWeb3.Transaction()
                     .add(createMintAccountIx)
@@ -498,6 +592,7 @@
                     .add(createATAInstruction)
                     .add(mintToIx)
                     .add(createMetadataIx)
+                    .add(...revokeInstructions) // Add revoke instructions here
                     .add(transferFeeIx);
 
                 const { blockhash } = await connection.getLatestBlockhash();
@@ -620,12 +715,15 @@
             if (window.solana && window.solana.isPhantom) {
                 connectBtn.textContent = 'Connect Phantom';
             }
-            // Set fixed service fee display immediately
-            serviceFeeDisplay.textContent = FIXED_SERVICE_FEE_SOL.toFixed(5) + ' SOL';
-            mintRentDisplay.textContent = 'Connect wallet to calculate...';
-            metadataRentDisplay.textContent = 'Connect wallet to calculate...';
-            gasFeeDisplay.textContent = '~' + (gasBufferLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5) + ' SOL';
-            totalMinimalDisplay.textContent = 'Connect wallet to calculate...';
+            // Set initial fixed fee displays
+            baseFeeDisplay.textContent = BASE_SERVICE_FEE_SOL.toFixed(5) + ' SOL';
+            revokeMintFeeDisplay.textContent = `+${REVOKE_MINT_OPTION_FEE_SOL.toFixed(5)} SOL`;
+            revokeFreezeFeeDisplay.textContent = `+${REVOKE_FREEZE_OPTION_FEE_SOL.toFixed(5)} SOL`;
+            gasFeeDisplay.textContent = `~${ESTIMATED_GAS_FEE_SOL.toFixed(5)} SOL`;
+            totalCostDisplay.textContent = 'Connecting wallet to calculate...';
+
+            // Initial call to update fee display for checkboxes
+            updateFeeDisplay();
         });
     </script>
 </body>
