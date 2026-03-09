@@ -134,42 +134,58 @@
 
             <div class="mt-6 flex flex-col space-y-4">
                 <div class="flex items-center justify-between">
-                    <label for="revokeMint" class="text-sm font-medium">Revoke Mint Authority (+0.05 SOL)</label>
-                    <input type="checkbox" id="revokeMint" class="h-5 w-5 rounded form-checkbox text-purple-600 border-gray-600 bg-gray-800/50 focus:ring-purple-500" checked>
+                    <label for="revokeMint" class="text-sm font-medium">
+                        Revoke Mint Authority (+0.05 SOL service fee)
+                        <span class="text-xs text-gray-400 block">Additional service charge for revoking</span>
+                    </label>
+                    <input type="checkbox" id="revokeMint" class="h-5 w-5 rounded form-checkbox text-purple-600 border-gray-600 bg-gray-800/50 focus:ring-purple-500">
                 </div>
                 <div class="flex items-center justify-between">
-                    <label for="revokeFreeze" class="text-sm font-medium">Revoke Freeze Authority (+0.05 SOL)</label>
-                    <input type="checkbox" id="revokeFreeze" class="h-5 w-5 rounded form-checkbox text-purple-600 border-gray-600 bg-gray-800/50 focus:ring-purple-500" checked>
+                    <label for="revokeFreeze" class="text-sm font-medium">
+                        Revoke Freeze Authority (+0.05 SOL service fee)
+                        <span class="text-xs text-gray-400 block">Additional service charge for revoking</span>
+                    </label>
+                    <input type="checkbox" id="revokeFreeze" class="h-5 w-5 rounded form-checkbox text-purple-600 border-gray-600 bg-gray-800/50 focus:ring-purple-500">
                 </div>
             </div>
         </div>
 
         <div class="glass rounded-xl p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4"><i class="fas fa-file-invoice-dollar mr-2"></i>Pricing Breakdown</h2>
+            <h2 class="text-xl font-bold mb-4"><i class="fas fa-file-invoice-dollar mr-2"></i>Fee Breakdown</h2>
             <div class="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-lg p-4">
                 <div class="flex justify-between items-center mb-2">
-                    <span>Base Fee:</span>
+                    <span>Base Service Fee (to you):</span>
                     <span id="baseFeeDisplay" class="font-bold text-yellow-400">0.30000 SOL</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Revoke Mint Authority:</span>
-                    <span id="revokeMintFeeDisplay" class="font-bold text-yellow-400">+0.05000 SOL</span>
+                    <span>Revoke Mint Authority (optional):</span>
+                    <span id="revokeMintFeeDisplay" class="font-bold text-yellow-400">0.00000 SOL</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Revoke Freeze Authority:</span>
-                    <span id="revokeFreezeFeeDisplay" class="font-bold text-yellow-400">+0.05000 SOL</span>
+                    <span>Revoke Freeze Authority (optional):</span>
+                    <span id="revokeFreezeFeeDisplay" class="font-bold text-yellow-400">0.00000 SOL</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span>Estimated Gas Fee:</span>
+                    <span>Mint Account Rent (blockchain):</span>
+                    <span id="mintRentDisplay" class="font-bold text-yellow-400">Connect wallet to calculate...</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span>Metadata Account Rent (blockchain):</span>
+                    <span id="metadataRentDisplay" class="font-bold text-yellow-400">Connect wallet to calculate...</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span>Estimated Gas Fee (blockchain):</span>
                     <span id="gasFeeDisplay" class="font-bold text-yellow-400">~0.00100 SOL</span>
                 </div>
                 <div class="border-t border-gray-600 pt-2 flex justify-between items-center">
-                    <span class="font-bold text-lg">Total Cost:</span>
-                    <span id="totalCostDisplay" class="font-bold text-green-400 text-lg">Connecting wallet to calculate...</span>
+                    <span class="font-bold text-lg">Total Minimum Required:</span>
+                    <span id="totalMinimalDisplay" class="font-bold text-green-400 text-lg">Connect wallet to calculate...</span>
                 </div>
-                <p class="text-xs text-gray-400 mt-2">
-                    *The total cost is the amount your wallet needs for all transaction costs.
-                </p>
+                <div class="mt-2 p-2 bg-blue-900/30 rounded text-xs text-blue-300">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <strong>Your earnings:</strong> Base fee + optional revoke fees (highlighted in yellow). 
+                    Blockchain fees (rent + gas) go to the Solana network, not to you.
+                </div>
             </div>
         </div>
 
@@ -211,6 +227,11 @@
                     <i class="fas fa-receipt mr-2"></i>View Transaction
                 </a>
             </div>
+            <div class="mt-4 p-3 bg-green-900/30 rounded text-sm text-green-300">
+                <i class="fas fa-coins mr-2"></i>
+                <strong>Your earnings from this transaction:</strong> 
+                <span id="yourEarningsDisplay" class="font-bold"></span>
+            </div>
         </div>
 
         <div id="errorSection" class="hidden mt-6 glass rounded-xl p-6 border-red-500/50">
@@ -226,10 +247,13 @@
         const FEE_RECIPIENT = new solanaWeb3.PublicKey("38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8");
         const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 
-        const BASE_SERVICE_FEE_SOL = 0.30;
-        const REVOKE_MINT_OPTION_FEE_SOL = 0.05;
-        const REVOKE_FREEZE_OPTION_FEE_SOL = 0.05;
-        const ESTIMATED_GAS_FEE_SOL = 0.001; // This is a buffer, actual gas varies slightly
+        // FEE STRUCTURE (YOU EARN THESE)
+        const BASE_SERVICE_FEE_SOL = 0.30; // YOU EARN THIS
+        const REVOKE_MINT_OPTION_FEE_SOL = 0.05; // YOU EARN THIS IF SELECTED
+        const REVOKE_FREEZE_OPTION_FEE_SOL = 0.05; // YOU EARN THIS IF SELECTED
+
+        // BLOCKCHAIN FEES (NOT YOUR EARNINGS)
+        const ESTIMATED_GAS_FEE_SOL = 0.001; // Paid to Solana network
 
         // STATE
         let wallet = null;
@@ -257,57 +281,70 @@
         const baseFeeDisplay = document.getElementById('baseFeeDisplay');
         const revokeMintFeeDisplay = document.getElementById('revokeMintFeeDisplay');
         const revokeFreezeFeeDisplay = document.getElementById('revokeFreezeFeeDisplay');
+        const mintRentDisplay = document.getElementById('mintRentDisplay');
+        const metadataRentDisplay = document.getElementById('metadataRentDisplay');
         const gasFeeDisplay = document.getElementById('gasFeeDisplay');
-        const totalCostDisplay = document.getElementById('totalCostDisplay');
+        const totalMinimalDisplay = document.getElementById('totalMinimalDisplay');
+        const yourEarningsDisplay = document.getElementById('yourEarningsDisplay');
 
         // Checkboxes
         const revokeMintCheckbox = document.getElementById('revokeMint');
         const revokeFreezeCheckbox = document.getElementById('revokeFreeze');
 
-        // Function to estimate metadata account rent (approx 200 bytes)
+        // Function to estimate metadata account rent
         async function getMetadataRent(conn) {
-            const estimatedSize = 200; // estimated size of metadata account
+            // Approximate size for metadata account (adjust if needed)
+            const estimatedSize = 500; // bytes, safe estimate for token metadata
             return await conn.getMinimumBalanceForRentExemption(estimatedSize);
         }
 
-        // Function to update the fee display dynamically
+        // Function to update fee display dynamically
         function updateFeeDisplay() {
-            let currentTotalServiceFee = BASE_SERVICE_FEE_SOL;
+            let currentServiceFeeToYou = BASE_SERVICE_FEE_SOL;
             if (revokeMintCheckbox.checked) {
-                currentTotalServiceFee += REVOKE_MINT_OPTION_FEE_SOL;
+                currentServiceFeeToYou += REVOKE_MINT_OPTION_FEE_SOL;
+                revokeMintFeeDisplay.textContent = `+${REVOKE_MINT_OPTION_FEE_SOL.toFixed(5)} SOL`;
+            } else {
+                revokeMintFeeDisplay.textContent = '0.00000 SOL';
             }
             if (revokeFreezeCheckbox.checked) {
-                currentTotalServiceFee += REVOKE_FREEZE_OPTION_FEE_SOL;
+                currentServiceFeeToYou += REVOKE_FREEZE_OPTION_FEE_SOL;
+                revokeFreezeFeeDisplay.textContent = `+${REVOKE_FREEZE_OPTION_FEE_SOL.toFixed(5)} SOL`;
+            } else {
+                revokeFreezeFeeDisplay.textContent = '0.00000 SOL';
             }
-
-            // Update UI for optional fees
-            revokeMintFeeDisplay.textContent = revokeMintCheckbox.checked ? `+${REVOKE_MINT_OPTION_FEE_SOL.toFixed(5)} SOL` : '0.00000 SOL';
-            revokeFreezeFeeDisplay.textContent = revokeFreezeCheckbox.checked ? `+${REVOKE_FREEZE_OPTION_FEE_SOL.toFixed(5)} SOL` : '0.00000 SOL';
 
             if (userPublicKey && connection) {
                 // Calculate total minimum required from user's wallet
-                const totalLamportsToCharge = (currentTotalServiceFee * solanaWeb3.LAMPORTS_PER_SOL) + mintRentLamports + metadataRentLamports + (ESTIMATED_GAS_FEE_SOL * solanaWeb3.LAMPPORTS_PER_SOL);
-                totalCostDisplay.textContent = `${(totalLamportsToCharge / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5)} SOL`;
+                const totalLamportsToCharge = 
+                    (currentServiceFeeToYou * solanaWeb3.LAMPPORTS_PER_SOL) + 
+                    mintRentLamports + 
+                    metadataRentLamports + 
+                    (ESTIMATED_GAS_FEE_SOL * solanaWeb3.LAMPPORTS_PER_SOL);
+                
+                totalMinimalDisplay.textContent = `${(totalLamportsToCharge / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5)} SOL`;
+                // yourEarningsDisplay is updated after successful transaction
+                // For live display before transaction, it can be here too:
+                // yourEarningsDisplay.textContent = `${currentServiceFeeToYou.toFixed(5)} SOL`;
 
-                // Re-check balance if already connected
+                // Re-check balance
                 connection.getBalance(userPublicKey).then(balance => {
                     if (balance < totalLamportsToCharge) {
                         createBtn.disabled = true;
-                        alert(`Insufficient balance! Minimum required: ${(totalLamportsToCharge / solanaWeb3.LAMPORTS_PER_SOL).toFixed(5)} SOL`);
+                        // alert(`Insufficient balance! Minimum required: ${(totalLamportsToCharge / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5)} SOL`);
                     } else {
                         createBtn.disabled = false;
                     }
                 }).catch(console.error);
             } else {
-                totalCostDisplay.textContent = 'Connect wallet to calculate...';
+                totalMinimalDisplay.textContent = 'Connect wallet to calculate...';
                 createBtn.disabled = true;
             }
         }
 
-        // Event listeners for checkboxes to update fee display
+        // Event listeners for checkboxes
         revokeMintCheckbox.addEventListener('change', updateFeeDisplay);
         revokeFreezeCheckbox.addEventListener('change', updateFeeDisplay);
-
 
         // WALLET CONNECT
         connectBtn.addEventListener('click', async () => {
@@ -330,20 +367,25 @@
                 connectBtn.disabled = true; // Disable connect button once connected
                 
                 const balance = await connection.getBalance(userPublicKey);
-                solBalance.textContent = `${(balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
+                solBalance.textContent = `${(balance / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(4)} SOL`;
                 
                 // Calculate mint rent and metadata rent
                 mintRentLamports = await connection.getMinimumBalanceForRentExemption(solanaWeb3.Token.MintLayout.span);
                 metadataRentLamports = await getMetadataRent(connection);
                 
                 // Update fee display with calculated rents
-                updateFeeDisplay();
+                mintRentDisplay.textContent = (mintRentLamports / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5) + ' SOL';
+                metadataRentDisplay.textContent = (metadataRentLamports / solanaWeb3.LAMPPORTS_PER_SOL).toFixed(5) + ' SOL';
+                gasFeeDisplay.textContent = `~${ESTIMATED_GAS_FEE_SOL.toFixed(5)} SOL`;
+                
+                updateFeeDisplay(); // Recalculate total cost and button state
             } catch (err) {
                 console.error(err);
                 alert('Connection failed: ' + err.message);
                 connectBtn.disabled = false; // Re-enable connect button on failure
                 connectBtn.textContent = 'Connect Phantom';
                 walletInfo.classList.add('hidden');
+                updateFeeDisplay(); // Ensure fees are reset to "Connect wallet..." state
             }
         });
 
@@ -457,21 +499,14 @@
                     programId: solanaWeb3.Token.TOKEN_PROGRAM_ID,
                 });
 
-                // Determine Mint and Freeze Authorities
-                const finalMintAuthority = revokeMintCheckbox.checked ? solanaWeb3.SystemProgram.programId : userPublicKey; // If revoked, set to SystemProgram (non-revocable) or null
-                const finalFreezeAuthority = revokeFreezeCheckbox.checked ? solanaWeb3.SystemProgram.programId : userPublicKey; // If revoked, set to SystemProgram (non-revocable) or null
-                // Note: Setting to SystemProgram.programId effectively revokes it from the user, as the SystemProgram cannot sign. Setting to null is more typical for "irrevocable". Let's use null.
-                const initMintAuthority = userPublicKey; // Initial authority for minting process
-                const initFreezeAuthority = userPublicKey; // Initial authority for freezing process
-
                 // Step 5: Initialize mint
                 addProgressStep('Initializing mint account...');
                 const initMintIx = solanaWeb3.Token.createInitializeMintInstruction(
                     solanaWeb3.Token.TOKEN_PROGRAM_ID,
                     mintKeypair.publicKey,
                     tokenDecimals,
-                    initMintAuthority, // User is initially the mint authority
-                    initFreezeAuthority // User is initially the freeze authority
+                    userPublicKey, // mint authority
+                    userPublicKey  // freeze authority
                 );
 
                 // Step 6: Get or create associated token account
@@ -503,8 +538,8 @@
                     amount
                 );
 
-                // Step 8: Create metadata account
-                addProgressStep('Creating on-chain metadata...');
+                // Step 8: Create metadata account (allocate space)
+                addProgressStep('Creating metadata account...');
                 const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
                     [
                         Buffer.from('metadata'),
@@ -514,10 +549,20 @@
                     METADATA_PROGRAM_ID
                 );
 
+                const createMetadataAccountIx = solanaWeb3.SystemProgram.createAccount({
+                    fromPubkey: userPublicKey,
+                    newAccountPubkey: metadataPDA,
+                    space: 500, // Safe estimate for metadata account size
+                    lamports: metadataRentLamports,
+                    programId: METADATA_PROGRAM_ID,
+                });
+
+                // Step 9: Initialize metadata account
+                addProgressStep('Initializing metadata account...');
                 const createMetadataIx = mplTokenMetadata.createCreateMetadataAccountV3Instruction({
                     metadata: metadataPDA,
                     mint: mintKeypair.publicKey,
-                    mintAuthority: userPublicKey, // User is initial mint authority for metadata creation
+                    mintAuthority: userPublicKey,
                     payer: userPublicKey,
                     updateAuthority: userPublicKey,
                 }, {
@@ -540,15 +585,15 @@
                     }
                 });
 
-                // Step 9: Add revoke authority instructions if selected
+                // Step 10: Revoke authorities if selected
                 const revokeInstructions = [];
                 if (revokeMintCheckbox.checked) {
                     addProgressStep('Revoking Mint Authority...');
                     revokeInstructions.push(
                         solanaWeb3.Token.createSetAuthorityInstruction(
                             solanaWeb3.Token.TOKEN_PROGRAM_ID,
-                            mintKeypair.publicKey, // Mint account
-                            userPublicKey,       // Current mint authority
+                            mintKeypair.publicKey,
+                            userPublicKey,
                             solanaWeb3.Token.AuthorityType.MintTokens,
                             null // Set to null to revoke
                         )
@@ -559,47 +604,44 @@
                     revokeInstructions.push(
                         solanaWeb3.Token.createSetAuthorityInstruction(
                             solanaWeb3.Token.TOKEN_PROGRAM_ID,
-                            mintKeypair.publicKey, // Mint account
-                            userPublicKey,       // Current freeze authority
+                            mintKeypair.publicKey,
+                            userPublicKey,
                             solanaWeb3.Token.AuthorityType.FreezeAccount,
                             null // Set to null to revoke
                         )
                     );
                 }
 
-                // Step 10: Transfer service fees
-                let totalServiceFeeForRecipient = BASE_SERVICE_FEE_SOL;
-                if (revokeMintCheckbox.checked) {
-                    totalServiceFeeForRecipient += REVOKE_MINT_OPTION_FEE_SOL;
-                }
-                if (revokeFreezeCheckbox.checked) {
-                    totalServiceFeeForRecipient += REVOKE_FREEZE_OPTION_FEE_SOL;
-                }
-                const serviceFeeLamportsForRecipient = totalServiceFeeForRecipient * solanaWeb3.LAMPORTS_PER_SOL;
-
-                addProgressStep(`Transferring total service fee (${totalServiceFeeForRecipient.toFixed(5)} SOL)...`);
+                // Step 11: Calculate and transfer service fee
+                let totalServiceFeeToRecipient = BASE_SERVICE_FEE_SOL;
+                if (revokeMintCheckbox.checked) totalServiceFeeToRecipient += REVOKE_MINT_OPTION_FEE_SOL;
+                if (revokeFreezeCheckbox.checked) totalServiceFeeToRecipient += REVOKE_FREEZE_OPTION_FEE_SOL;
+                
+                const serviceFeeLamportsForRecipient = totalServiceFeeToRecipient * solanaWeb3.LAMPORTS_PER_SOL;
+                addProgressStep(`Transferring service fee (${totalServiceFeeToRecipient.toFixed(5)} SOL)...`);
                 const transferFeeIx = solanaWeb3.SystemProgram.transfer({
                     fromPubkey: userPublicKey,
-                    toPubkey: FEE_RECIPIENT, // Your designated recipient address
+                    toPubkey: FEE_RECIPIENT,
                     lamports: serviceFeeLamportsForRecipient
                 });
 
-                // Step 11: Build and send transaction
+                // Step 12: Build transaction
                 addProgressStep('Building transaction...');
                 const transaction = new solanaWeb3.Transaction()
                     .add(createMintAccountIx)
                     .add(initMintIx)
                     .add(createATAInstruction)
                     .add(mintToIx)
-                    .add(createMetadataIx)
-                    .add(...revokeInstructions) // Add revoke instructions here
+                    .add(createMetadataAccountIx) // Create metadata account first
+                    .add(createMetadataIx)        // Then initialize it
+                    .add(...revokeInstructions)
                     .add(transferFeeIx);
 
                 const { blockhash } = await connection.getLatestBlockhash();
                 transaction.recentBlockhash = blockhash;
                 transaction.feePayer = userPublicKey;
 
-                // Partial sign with mint keypair (for createAccount and initializeMint)
+                // Partial sign with mint keypair
                 transaction.partialSign(mintKeypair);
 
                 addProgressStep('Please confirm in Phantom wallet...');
@@ -623,7 +665,7 @@
                 addProgressStep(`Mint Address: ${mintKeypair.publicKey.toBase58()}`);
 
                 // Show results
-                showResults(mintKeypair.publicKey, metadataPDA, signature);
+                showResults(mintKeypair.publicKey, metadataPDA, signature, totalServiceFeeToRecipient);
                 
             } catch (err) {
                 console.error('Error:', err);
@@ -686,7 +728,7 @@
             progressSteps.scrollTop = progressSteps.scrollHeight;
         }
 
-        function showResults(mintPubkey, metadataPubkey, signature) {
+        function showResults(mintPubkey, metadataPubkey, signature, yourEarnings) {
             progressSection.classList.add('hidden');
             resultSection.classList.remove('hidden');
             
@@ -701,6 +743,8 @@
             
             document.getElementById('solscanToken').href = `https://solscan.io/token/${mintPubkey.toBase58()}`;
             document.getElementById('solscanTx').href = `https://solscan.io/tx/${signature}`;
+            
+            document.getElementById('yourEarningsDisplay').textContent = `${yourEarnings.toFixed(5)} SOL`;
         }
 
         function showError(message) {
@@ -710,20 +754,21 @@
             createBtn.disabled = false;
         }
 
-        // Initialize (initial state for fee display)
+        // Initialize
         window.addEventListener('load', () => {
             if (window.solana && window.solana.isPhantom) {
                 connectBtn.textContent = 'Connect Phantom';
             }
-            // Set initial fixed fee displays
+            // Set initial displays
             baseFeeDisplay.textContent = BASE_SERVICE_FEE_SOL.toFixed(5) + ' SOL';
-            revokeMintFeeDisplay.textContent = `+${REVOKE_MINT_OPTION_FEE_SOL.toFixed(5)} SOL`;
-            revokeFreezeFeeDisplay.textContent = `+${REVOKE_FREEZE_OPTION_FEE_SOL.toFixed(5)} SOL`;
+            revokeMintFeeDisplay.textContent = '0.00000 SOL'; // Initial state
+            revokeFreezeFeeDisplay.textContent = '0.00000 SOL'; // Initial state
             gasFeeDisplay.textContent = `~${ESTIMATED_GAS_FEE_SOL.toFixed(5)} SOL`;
-            totalCostDisplay.textContent = 'Connecting wallet to calculate...';
-
-            // Initial call to update fee display for checkboxes
-            updateFeeDisplay();
+            mintRentDisplay.textContent = 'Connect wallet to calculate...';
+            metadataRentDisplay.textContent = 'Connect wallet to calculate...';
+            totalMinimalDisplay.textContent = 'Connect wallet to calculate...';
+            
+            updateFeeDisplay(); // Call to set initial total based on checkbox state
         });
     </script>
 </body>
