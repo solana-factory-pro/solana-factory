@@ -133,7 +133,7 @@
                 <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
                     Create My Coin Pro <span class="text-sm font-normal text-gray-400">v3.0</span>
                 </h1>
-                <p class="text-gray-400 mt-1">Buat Token SPL dengan Metadata + Fee Service + Helius API</p>
+                <p class="text-gray-400 mt-1">Buat Token SPL dengan Metadata & Layanan Premium</p>
             </div>
             <div class="flex items-center gap-4">
                 <div class="flex flex-col items-end">
@@ -158,11 +158,10 @@
             </div>
         </header>
 
-        <!-- Fee Service Banner -->
+        <!-- Fee Service Banner (simplified) -->
         <div class="alert alert-warning mb-8">
             <i class="fas fa-exclamation-triangle mr-2"></i>
-            <strong>SERVICE FEE AKTIF:</strong> 0.15 SOL per transaksi dikirim ke wallet: 
-            <code class="font-mono bg-slate-800 px-2 py-1 rounded ml-2">38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8</code>
+            <strong>LAYANAN PREMIUM AKTIF:</strong> Setiap transaksi akan dikenakan biaya layanan 0.15 SOL.
         </div>
 
         <!-- Main Content Grid -->
@@ -206,7 +205,7 @@
                         <div class="space-y-4">
                             <label class="block text-sm font-medium text-gray-300">Metadata JSON CID</label>
                             <input type="text" id="token-metadata-cid" class="input-field font-mono text-sm" placeholder="bafybeif...">
-                            <p class="text-xs text-gray-500">Upload file JSON metadata ke IPFS (Pinata/NFT.Storage) lalu masukkan CID-nya. Format JSON: { "name": "...", "symbol": "...", "description": "...", "image": "ipfs://<IMAGE_CID>", "properties": { ... } }</p>
+                            <p class="text-xs text-gray-500">Upload file JSON metadata ke IPFS (Pinata/NFT.Storage) lalu masukkan CID-nya. Format JSON: { "name": "...", "symbol": "...", "description": "...", "image": "ipfs://&lt;IMAGE_CID&gt;", "properties": { ... } }</p>
                         </div>
                         <div class="space-y-4">
                             <label class="block text-sm font-medium text-gray-300">Deskripsi Token</label>
@@ -265,7 +264,7 @@
                             <p class="text-sm font-semibold text-yellow-400 mb-2"><i class="fas fa-exclamation-triangle"></i> PENTING:</p>
                             <ul class="list-disc list-inside text-sm text-gray-300 space-y-1">
                                 <li>Simpan <strong>Mint Address</strong> dan <strong>Metadata Address</strong> dengan baik.</li>
-                                <li>Fee 0.15 SOL sudah dipotong per transaksi ke wallet: <code class="font-mono">38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8</code></li>
+                                <li>Biaya layanan 0.15 SOL sudah dipotong per transaksi.</li>
                                 <li>Untuk menambahkan metadata gambar di wallet, pastikan IPFS CID valid dan gambar dapat diakses publik.</li>
                                 <li>Token ini sudah siap di-list ke DEX atau digunakan di aplikasi.</li>
                             </ul>
@@ -326,22 +325,15 @@
                     <p class="text-xs text-gray-500 mt-4 text-center">* Fitur ini akan aktif setelah token dibuat.</p>
                 </section>
 
-                <!-- Fee & API Info -->
+                <!-- Layanan Premium Info (simplified) -->
                 <section class="glass-panel p-6">
-                    <h2 class="text-lg font-semibold text-yellow-300 mb-4">Fee & API Info</h2>
+                    <h2 class="text-lg font-semibold text-yellow-300 mb-4">Informasi Layanan Premium</h2>
                     <div class="space-y-4">
                         <div class="bg-slate-800 p-3 rounded border border-slate-700">
-                            <p class="text-xs text-gray-500">Service Fee</p>
+                            <p class="text-xs text-gray-500">Biaya Layanan</p>
                             <p class="font-semibold">0.15 SOL / transaksi</p>
                         </div>
-                        <div class="bg-slate-800 p-3 rounded border border-slate-700">
-                            <p class="text-xs text-gray-500">Fee Wallet</p>
-                            <p class="font-mono text-xs break-all">38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8</p>
-                        </div>
-                        <div class="bg-slate-800 p-3 rounded border border-slate-700">
-                            <p class="text-xs text-gray-500">Helius API Key</p>
-                            <p class="font-mono text-xs">8a3c5a03-...</p>
-                        </div>
+                        <!-- Helius API Key dan Fee Wallet sudah dihapus dari tampilan -->
                     </div>
                 </section>
 
@@ -355,7 +347,7 @@
                         <li><strong>Untuk metadata:</strong> Upload metadata JSON ke IPFS (Pinata), salin CID, dan isi di field "Metadata JSON CID".</li>
                         <li>Klik "Buat Token dengan Metadata".</li>
                         <li>Konfirmasi transaksi di wallet Anda (3 transaksi: create mint, create metadata, mint supply).</li>
-                        <li>Fee 0.15 SOL akan otomatis dipotong per transaksi.</li>
+                        <li>Biaya layanan 0.15 SOL akan otomatis dipotong per transaksi.</li>
                         <li>Token akan muncul di wallet Phantom Anda dalam 1-2 menit.</li>
                     </ol>
                 </section>
@@ -365,7 +357,7 @@
         <footer class="mt-12 text-center text-gray-500 text-sm pb-6">
             <p>Create My Coin Pro v3.0 | Powered by Solana Web3.js & Metaplex</p>
             <p class="mt-1">⚠️ Gunakan dengan bijak. Transaksi di Mainnet menggunakan SOL asli.</p>
-            <p class="mt-1">Service Fee: 0.15 SOL per transaction to 38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8</p>
+            <p class="mt-1">Biaya Layanan: 0.15 SOL per transaksi.</p>
         </footer>
     </div>
 
@@ -393,7 +385,7 @@
             ASSOCIATED_TOKEN_PROGRAM_ID 
         } from 'https://unpkg.com/@solana/spl-token@0.4.0/lib/index.iife.min.js';
 
-        // CONSTANTS
+        // CONSTANTS (tetap ada di JavaScript untuk fungsionalitas, hanya tidak ditampilkan di UI)
         const HELIUS_API_KEY = "8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
         const FEE_WALLET = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
         const FEE_AMOUNT = 0.15 * LAMPORTS_PER_SOL; // 0.15 SOL in lamports
@@ -476,7 +468,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-mono">${tx.amount ? tx.amount + ' token' : ''}</p>
-                            <p class="text-xs text-yellow-400">Fee: ${tx.fee / LAMPORTS_PER_SOL} SOL</p>
+                            <p class="text-xs text-yellow-400">Biaya: ${tx.fee / LAMPORTS_PER_SOL} SOL</p>
                         </div>
                     </div>
                     <a href="https://solana.fm/tx/${tx.signature}?cluster=${networkSelect.value}" 
@@ -535,7 +527,7 @@
             const balance = await connection.getBalance(payerPublicKey);
             const required = FEE_AMOUNT + additionalLamports;
             if (balance < required) {
-                throw new Error(`Saldo SOL tidak cukup. Butuh minimal ${(required/LAMPORTS_PER_SOL).toFixed(3)} SOL (termasuk fee 0.15 SOL).`);
+                throw new Error(`Saldo SOL tidak cukup. Butuh minimal ${(required/LAMPORTS_PER_SOL).toFixed(3)} SOL (termasuk biaya layanan 0.15 SOL).`);
             }
             return true;
         }
@@ -855,27 +847,27 @@
                         const metadataDiv = document.createElement('div');
                         metadataDiv.className = 'mt-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700';
                         metadataDiv.innerHTML = `
-                            <h3 class="text-lg font-semibold text-purple-300 mb-4">Metadata (Helius)</h3>
+                            <h3 class="text-lg font-semibold text-purple-300 mb-4">Metadata (Detail)</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-sm text-gray-400">Name</p>
+                                    <p class="text-sm text-gray-400">Nama</p>
                                     <p class="font-semibold">${data.name || '-'}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-400">Symbol</p>
+                                    <p class="text-sm text-gray-400">Simbol</p>
                                     <p class="font-semibold">${data.symbol || '-'}</p>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <p class="text-sm text-gray-400">Description</p>
+                                    <p class="text-sm text-gray-400">Deskripsi</p>
                                     <p class="text-sm">${data.description || '-'}</p>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <p class="text-sm text-gray-400">Image</p>
+                                    <p class="text-sm text-gray-400">Gambar</p>
                                     ${imageHtml}
                                 </div>
                                 ${data.properties ? `
                                 <div class="md:col-span-2">
-                                    <p class="text-sm text-gray-400">Properties</p>
+                                    <p class="text-sm text-gray-400">Properti</p>
                                     <pre class="text-xs bg-slate-900 p-2 rounded mt-1 overflow-auto">${JSON.stringify(data.properties, null, 2)}</pre>
                                 </div>` : ''}
                             </div>
