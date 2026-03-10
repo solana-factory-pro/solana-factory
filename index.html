@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts (Optional, menggunakan Inter sebagai default) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Borsh for Metaplex Data Serialization -->
+    <script src="https://cdn.jsdelivr.net/npm/borsh@latest/dist/index.global.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -158,9 +160,17 @@
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
+            min-width: 250px;
+            text-align: center;
         }
         .toast.show {
             opacity: 1;
+        }
+        .hero-section {
+            display: block; /* Ensure it's visible initially */
+        }
+        .hidden {
+            display: none !important; /* Force hide */
         }
     </style>
 </head>
@@ -181,7 +191,7 @@
 
     <main class="container mx-auto p-4 md:p-8">
         <!-- Hero Section -->
-        <section class="text-center py-16 md:py-24 relative z-0">
+        <section id="heroSection" class="text-center py-16 md:py-24 relative z-0 hero-section">
             <h1 class="text-4xl md:text-6xl font-extrabold leading-tight text-white mb-4">
                 Create Your Token in <span class="gradient-text">60 Seconds</span>
             </h1>
@@ -324,13 +334,11 @@
     <!-- Solana Web3.js and SPL Token Library CDNs -->
     <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@0.4.0/lib/index.iife.js"></script>
-    <!-- Metaplex Token Metadata for creating rich token metadata -->
-    <!-- Note: MPL Token Metadata is usually bundled. For simplicity in a single HTML, we will manually construct the instruction. -->
 
     <script>
         // Constants from User Input
         const HELIUS_API_KEY = "8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
-        const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVyZWVSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiI4ZjcxMmU4ZjFhNmQyNTE1OGQ4MSIsInNjb3BlZEtleVNlY3JldCI6Ijg5YTVhMGIwZDk2ODEzOTQ1YTljZTg0MGJjYWE1MzQ3MDhhMTk0YjBiMmI0OGM1ODBjYjMzMWJmMTg3NzAwNjM3IiwKImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
+        const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb25iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
         const SERVICE_FEE_WALLET_ADDRESS = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8"; // Wallet to receive service fees
 
         // Base fees in SOL (for display and calculation)
@@ -339,9 +347,10 @@
         const REVOKE_FREEZE_DISPLAY_FEE = 0.05;
 
         // Actual fees to send to SERVICE_FEE_WALLET_ADDRESS
-        const BASE_SERVICE_AMOUNT = 0.25; // This is the base amount sent to the service wallet
-        const REVOKE_MINT_SERVICE_AMOUNT = 0.05;
-        const REVOKE_FREEZE_SERVICE_AMOUNT = 0.05;
+        const BASE_TRANSFER_FEE = 0.25; // Base amount from user prompt "service fee 0.25 sol"
+        const REVOKE_MINT_TRANSFER_ADDON = 0.05;
+        const REVOKE_FREEZE_TRANSFER_ADDON = 0.05;
+
 
         // Solana RPC Connection (using Helius)
         const connection = new SolanaWeb3.Connection(`https://rpc.helius.xyz/?api-key=${HELIUS_API_KEY}`, 'confirmed');
@@ -350,6 +359,7 @@
         let userPublicKey = null;
 
         // DOM Elements
+        const heroSection = document.getElementById('heroSection');
         const createSolanaTokenNowBtn = document.getElementById('createSolanaTokenNowBtn');
         const connectWalletSection = document.getElementById('connectWalletSection');
         const connectPhantomBtn = document.getElementById('connectPhantomBtn');
@@ -358,13 +368,14 @@
         const tokenForm = document.getElementById('tokenForm');
         const revokeMintAuthorityCheckbox = document.getElementById('revokeMintAuthority');
         const revokeFreezeAuthorityCheckbox = document.getElementById('revokeFreezeAuthority');
+        const immutableMetadataCheckbox = document.getElementById('immutableMetadata'); // Make sure this is present
         const mintAuthorityFeeStatus = document.getElementById('mintAuthorityFeeStatus');
         const freezeAuthorityFeeStatus = document.getElementById('freezeAuthorityFeeStatus');
         const totalFeeDisplay = document.getElementById('totalFeeDisplay');
         const createTokenBtn = document.getElementById('createTokenBtn');
         const toastElement = document.getElementById('toast');
 
-        // Utility to show toast messages
+        // --- Utility to show toast messages ---
         function showToast(message, isError = false) {
             toastElement.textContent = message;
             toastElement.className = 'toast show';
@@ -410,6 +421,17 @@
         }
 
         // --- Pricing Calculation Logic ---
+        function calculateTotalServiceFeeToTransfer() {
+            let serviceFeeToTransfer = BASE_TRANSFER_FEE;
+            if (revokeMintAuthorityCheckbox.checked) {
+                serviceFeeToTransfer += REVOKE_MINT_TRANSFER_ADDON;
+            }
+            if (revokeFreezeAuthorityCheckbox.checked) {
+                serviceFeeToTransfer += REVOKE_FREEZE_TRANSFER_ADDON;
+            }
+            return serviceFeeToTransfer;
+        }
+
         function updatePricing() {
             let currentTotalDisplayFee = BASE_DISPLAY_FEE;
             
@@ -462,6 +484,83 @@
             }
         }
 
+        // --- Metaplex Schema Definitions for Borsh ---
+        const METADATA_PROGRAM_ID = new SolanaWeb3.PublicKey("metaqbxxUerdq28cj1RbTFW3aHsXakkVyQCQJuHG5Du");
+        
+        // Define Creator class for borsh serialization
+        class Creator {
+            constructor(args) {
+                this.address = args.address; // Buffer (32 bytes)
+                this.verified = args.verified; // u8
+                this.share = args.share; // u8
+            }
+        }
+
+        // Define DataV2 class for borsh serialization
+        class DataV2 {
+            constructor(args) {
+                this.name = args.name;
+                this.symbol = args.symbol;
+                this.uri = args.uri;
+                this.sellerFeeBasisPoints = args.sellerFeeBasisPoints; // u16
+                this.creators = args.creators; // Option<Array<Creator>>
+                this.collection = args.collection; // Option<Collection>
+                this.uses = args.uses; // Option<Uses>
+            }
+        }
+
+        // Define CreateMetadataAccountArgsV3 class for borsh serialization
+        class CreateMetadataAccountArgsV3 {
+            constructor(args) {
+                this.instruction = args.instruction; // u8 (discriminant 33)
+                this.data = args.data; // DataV2
+                this.isMutable = args.isMutable; // u8 (0 for false, 1 for true)
+                this.collectionDetails = args.collectionDetails; // Option<CollectionDetails>
+            }
+        }
+
+        // Borsh schema map for Metaplex instructions
+        const METAPLEX_SCHEMA = new Map([
+            [
+                Creator,
+                {
+                    kind: 'struct',
+                    fields: [
+                        ['address', [32]],
+                        ['verified', 'u8'],
+                        ['share', 'u8'],
+                    ],
+                },
+            ],
+            [
+                DataV2,
+                {
+                    kind: 'struct',
+                    fields: [
+                        ['name', 'string'],
+                        ['symbol', 'string'],
+                        ['uri', 'string'],
+                        ['sellerFeeBasisPoints', 'u16'],
+                        ['creators', { kind: 'option', type: [Creator] }],
+                        ['collection', { kind: 'option', type: 'object' }], // null for now
+                        ['uses', { kind: 'option', type: 'object' }], // null for now
+                    ],
+                },
+            ],
+            [
+                CreateMetadataAccountArgsV3,
+                {
+                    kind: 'struct',
+                    fields: [
+                        ['instruction', 'u8'], // Instruction discriminant (33)
+                        ['data', DataV2],
+                        ['isMutable', 'u8'], // 0 for false, 1 for true
+                        ['collectionDetails', { kind: 'option', type: 'object' }], // null for now
+                    ],
+                },
+            ],
+        ]);
+
         // --- Token Creation Logic ---
         async function createToken(event) {
             event.preventDefault();
@@ -483,6 +582,7 @@
                 const tokenDescription = document.getElementById('tokenDescription').value.trim();
                 const revokeMint = revokeMintAuthorityCheckbox.checked;
                 const revokeFreeze = revokeFreezeAuthorityCheckbox.checked;
+                const immutableMetadata = immutableMetadataCheckbox.checked; // This is always true and disabled
 
                 if (!tokenName || !tokenSymbol || isNaN(decimals) || isNaN(initialSupply) || initialSupply <= 0) {
                     showToast('Harap isi semua detail token yang wajib.', true);
@@ -494,8 +594,13 @@
                 showToast('Mengunggah logo ke IPFS (jika ada)...');
                 const logoUri = tokenLogoFile ? await uploadFileToIPFS(tokenLogoFile) : null;
                 if (tokenLogoFile && !logoUri) {
-                    throw new Error('Gagal mendapatkan URI logo dari IPFS.');
+                    throw new Error('Gagal mendapatkan URI logo dari IPFS. Harap coba lagi atau gunakan file lain.');
                 }
+
+                const metadataUri = logoUri ? `https://ipfs.io/ipfs/${logoUri.split('/').pop()}/metadata.json` : `https://arweave.net/placeholder_uri`;
+                // For a proper Metaplex URI, we usually upload a metadata JSON file to IPFS as well.
+                // For simplicity here, if a logo is uploaded, we'll construct a mock URI.
+                // In a real scenario, you'd upload a JSON file with name, symbol, description, image etc.
 
                 // 1. Generate a new Keypair for the Token Mint
                 const mintKeypair = SolanaWeb3.Keypair.generate();
@@ -507,13 +612,7 @@
                 const signers = [mintKeypair]; // mintKeypair needs to sign for mint creation
 
                 // 2. Calculate actual service fee to send
-                let serviceFeeLamports = new SolanaWeb3.BN(BASE_SERVICE_AMOUNT * SolanaWeb3.LAMPORTS_PER_SOL);
-                if (revokeMint) {
-                    serviceFeeLamports = serviceFeeLamports.add(new SolanaWeb3.BN(REVOKE_MINT_SERVICE_AMOUNT * SolanaWeb3.LAMPORTS_PER_SOL));
-                }
-                if (revokeFreeze) {
-                    serviceFeeLamports = serviceFeeLamports.add(new SolanaWeb3.BN(REVOKE_FREEZE_SERVICE_AMOUNT * SolanaWeb3.LAMPORTS_PER_SOL));
-                }
+                let serviceFeeLamports = new SolanaWeb3.BN(calculateTotalServiceFeeToTransfer() * SolanaWeb3.LAMPORTS_PER_SOL);
                 const serviceFeeWalletPublicKey = new SolanaWeb3.PublicKey(SERVICE_FEE_WALLET_ADDRESS);
 
                 // 3. Get minimum balance for rent exemption for the mint account
@@ -532,7 +631,7 @@
                         mintKeypair.publicKey,
                         decimals,
                         mintAuthority, // User's wallet as initial mint authority
-                        revokeFreeze ? freezeAuthority : null, // User's wallet as initial freeze authority, or null if not revoking
+                        revokeFreeze ? freezeAuthority : null, // User's wallet as initial freeze authority, or null if revoking
                         SolanaSPLToken.TOKEN_PROGRAM_ID
                     )
                 );
@@ -581,219 +680,57 @@
                     );
                 }
 
-                // 7. Create Metaplex Metadata instruction
-                // Program ID for Metaplex Token Metadata
-                const METAPLEX_PROGRAM_ID = new SolanaWeb3.PublicKey("metaqbxxUerdq28cj1RbTFW3aHsXakkVyQCQJuHG5Du");
-                const [metadataAddress] = SolanaWeb3.PublicKey.findProgramAddressSync(
-                    [
-                        Buffer.from("metadata"),
-                        METAPLEX_PROGRAM_ID.toBuffer(),
-                        mintKeypair.publicKey.toBuffer(),
-                    ],
-                    METAPLEX_PROGRAM_ID
-                );
-
-                const dataV2 = {
-                    name: tokenName,
-                    symbol: tokenSymbol,
-                    uri: logoUri || "https://arweave.net/1A_y3t-WJ4g6XF-vC7b3lFk_y3b0_oX9t7F-u0-g0", // Placeholder if no logo
-                    sellerFeeBasisPoints: 0, // No seller fee for now
-                    creators: [{
-                        address: userPublicKey,
-                        verified: true,
-                        share: 100,
-                    }],
-                    collection: null,
-                    uses: null,
-                };
-                
-                // Manually construct CreateMetadataAccountV3 instruction (simplified for direct use)
-                const createMetadataInstruction = new SolanaWeb3.TransactionInstruction({
-                    keys: [
-                        { pubkey: metadataAddress, isSigner: false, isWritable: true },
-                        { pubkey: mintKeypair.publicKey, isSigner: false, isWritable: false },
-                        { pubkey: userPublicKey, isSigner: true, isWritable: false }, // Payer
-                        { pubkey: SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
-                        { pubkey: SolanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
-                    ],
-                    programId: METAPLEX_PROGRAM_ID,
-                    data: Buffer.from([
-                        ...[0x33], // CreateMetadataAccountV3 instruction code
-                        ...Buffer.from(JSON.stringify(dataV2.name)),
-                        ...Buffer.from(JSON.stringify(dataV2.symbol)),
-                        ...Buffer.from(JSON.stringify(dataV2.uri)),
-                        ...Buffer.from(JSON.stringify(dataV2.sellerFeeBasisPoints)),
-                        ...Buffer.from(JSON.stringify(dataV2.creators)),
-                        ...Buffer.from(JSON.stringify(dataV2.collection)),
-                        ...Buffer.from(JSON.stringify(dataV2.uses)),
-                        ...Buffer.from([1]), // IsMutable: 1 for true, 0 for false. Immutable option is checked.
-                    ]),
-                });
-
-                // Since we want immutable metadata, we need to manually adjust this.
-                // The MPL Token Metadata program requires specific serialization.
-                // For a quick client-side solution, using a pre-built instruction or a smaller library is better.
-                // Given the constraint of a single HTML file without complex bundling,
-                // constructing Metaplex instruction directly is complex.
-                // Let's simplify and use the SPL Token's `setAuthority` for metadata update as a fallback,
-                // or just leave metadata creation simpler for this direct HTML file.
-                // A full Metaplex instruction requires a proper serialization.
-                // I will use a simplified approach to set metadata URI in this single file context.
-                // For "Immutable Metadata", it means after creation, it cannot be changed. This flag is part of the Metaplex standard.
-                // Let's create a *basic* metadata update for demonstration in this single HTML file.
-                // A more robust solution would integrate Metaplex's JS SDK.
-
-                // For basic metadata without full Metaplex SDK, we can use a simpler approach
-                // or assume Metaplex is integrated server-side. For "persis kyk gini",
-                // the Metaplex standard is expected. I will provide a placeholder for metadata instruction
-                // that would typically come from an SDK.
-                // Due to the complexity of Metaplex instruction serialization directly in JS buffer in a single HTML,
-                // I will add a simplified metadata update or placeholder.
-                // The Metaplex instruction `CreateMetadataAccountV3` is complex to serialize manually.
-                // For the purpose of "script bikin website", I will *describe* the Metaplex part
-                // and provide a minimal placeholder for on-chain text metadata if direct Metaplex SDK isn't loaded.
-
-                // Let's try to include a simplified Metaplex instruction (this will require careful serialization)
-                // A better approach for client-side Metaplex is via CDN if available, or a small helper function.
-                // For this scenario, where a robust Metaplex SDK isn't easily loaded in a single IIFE,
-                // I'll provide a simplified on-chain text metadata instruction for demonstration,
-                // and explain that full Metaplex integration would typically use an SDK.
-
-                // *********** Simplified Metadata Creation (Not full Metaplex, but shows intent) ***********
-                // This will not be full Metaplex standard but demonstrates setting some on-chain data.
-                // For actual Metaplex metadata, you'd use @metaplex-foundation/mpl-token-metadata
-                // and its instruction builders.
-                
-                // Example of creating a simple "memo" or arbitrary data on chain if full Metaplex is too heavy
-                // transaction.add(
-                //     new SolanaWeb3.TransactionInstruction({
-                //         keys: [{ pubkey: userPublicKey, isSigner: true, isWritable: true }],
-                //         data: Buffer.from(`Token: ${tokenName} (${tokenSymbol}) | Desc: ${tokenDescription} | Logo: ${logoUri || 'N/A'}`),
-                //         programId: new SolanaWeb3.PublicKey("MemoSq4gqABAXKb96WygEZxGaZsrCJAVAHYECXrCDZv"), // Memo Program
-                //     })
-                // );
-                // ******************************************************************************************
-                
-                // Instead of a simplified memo, let's try a direct Metaplex instruction,
-                // but acknowledge its complexity for manual serialization.
-                // For actual Metaplex, the instruction data serialization is critical.
-                // The `createCreateMetadataAccountV3Instruction` from `@metaplex-foundation/mpl-token-metadata`
-                // serializes the data correctly. Without that SDK, it's very error-prone.
-                // For the sake of "metadata lengkap semua", I will simulate it.
-
-                // Using a helper for Metaplex instruction data (minimal example, might need adjustment)
-                // This is a complex part without the Metaplex SDK. I'll provide a functional placeholder.
-                const METADATA_PROGRAM_ID = new SolanaWeb3.PublicKey("metaqbxxUerdq28cj1RbTFW3aHsXakkVyQCQJuHG5Du");
-                const TOKEN_METADATA_PROGRAM_ID = new SolanaWeb3.PublicKey("metaqbxxUerdq28cj1RbTFW3aHsXakkVyQCQJuHG5Du");
-
+                // --- 7. Create Metaplex Token Metadata Instruction ---
                 const [metadataPda] = SolanaWeb3.PublicKey.findProgramAddressSync(
                     [
                         Buffer.from("metadata"),
-                        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                        METADATA_PROGRAM_ID.toBuffer(),
                         mintKeypair.publicKey.toBuffer(),
                     ],
-                    TOKEN_METADATA_PROGRAM_ID
+                    METADATA_PROGRAM_ID
                 );
 
-                const data = {
+                const creators = [{
+                    address: userPublicKey.toBuffer(),
+                    verified: true,
+                    share: 100,
+                }];
+
+                const dataV2 = new DataV2({
                     name: tokenName,
                     symbol: tokenSymbol,
-                    uri: logoUri || "https://arweave.net/placeholder", // Placeholder
+                    uri: logoUri || "https://arweave.net/1A_y3t-WJ4g6XF-vC7b3lFk_y3b0_oX9t7F-u0-g0", // Fallback URI
                     sellerFeeBasisPoints: 0,
-                    creators: [{
-                        address: userPublicKey,
-                        verified: true,
-                        share: 100,
-                    }],
+                    creators: creators,
                     collection: null,
                     uses: null,
-                };
+                });
 
-                // This is a simplified way to create Metaplex metadata instruction data.
-                // A real implementation would use the Metaplex SDK for proper serialization.
-                // For a single HTML file context, this is a compromise.
-                const metadataInstructionData = new Uint8Array([
-                    0x33, // Instruction code for CreateMetadataAccountV3
-                    // Name
-                    ...Buffer.from(tokenName), 0, // Simplified string with null terminator
-                    // Symbol
-                    ...Buffer.from(tokenSymbol), 0, // Simplified string with null terminator
-                    // URI
-                    ...Buffer.from(data.uri), 0, // Simplified string with null terminator
-                    // Seller Fee Basis Points
-                    ...new Uint8Array(new SolanaWeb3.BN(data.sellerFeeBasisPoints).toArrayLike(Buffer, 'le', 2)), // 2 bytes
-                    // Creators (simplified for one creator, needs proper vector serialization)
-                    0x01, // 1 creator
-                    ...userPublicKey.toBuffer(),
-                    0x01, // Verified
-                    100, // Share
-                    // Collection (null)
-                    0x00,
-                    // Uses (null)
-                    0x00,
-                    // Is Mutable
-                    revokeMint && revokeFreeze ? 0x00 : 0x01 // 0x00 for immutable, 0x01 for mutable. If both revoked, make immutable.
-                ]);
+                const createMetadataArgs = new CreateMetadataAccountArgsV3({
+                    instruction: 33, // Discriminant for CreateMetadataAccountV3
+                    data: dataV2,
+                    isMutable: immutableMetadata ? 0 : 1, // 0 for false (immutable), 1 for true. 'immutableMetadata' is checked.
+                    collectionDetails: null,
+                });
 
-                // This is a highly simplified and likely incorrect manual serialization.
-                // For robust Metaplex, you *must* use the SDK.
-                // Given "metadata lengkap semua" and single HTML, this is the best I can do without including a full SDK.
-                // The Metaplex SDK would generate this instruction correctly:
-                // createCreateMetadataAccountV3Instruction({
-                //     metadata: metadataPda,
-                //     mint: mintKeypair.publicKey,
-                //     mintAuthority: userPublicKey,
-                //     payer: userPublicKey,
-                //     updateAuthority: userPublicKey,
-                // }, {
-                //     createMetadataAccountArgsV3: {
-                //         data: {
-                //             name: tokenName,
-                //             symbol: tokenSymbol,
-                //             uri: logoUri || "https://arweave.net/placeholder",
-                //             sellerFeeBasisPoints: 0,
-                //             creators: [{ address: userPublicKey, verified: true, share: 100 }],
-                //             collection: null,
-                //             uses: null,
-                //         },
-                //         isMutable: !(revokeMint && revokeFreeze), // Immutable if both are revoked
-                //         collectionDetails: null,
-                //     }
-                // });
+                const metadataInstructionData = Borsh.serialize(METAPLEX_SCHEMA, createMetadataArgs);
 
-                // Since direct Metaplex instruction serialization is too complex for this format,
-                // I will add a placeholder instruction, and recommend a backend or proper frontend bundling for Metaplex.
-                // For a client-side only, simple Metaplex metadata is not trivial without SDK.
-                // I will proceed with SPL Token creation and fee transfer, and note the Metaplex limitation.
+                const createMetadataInstruction = new SolanaWeb3.TransactionInstruction({
+                    keys: [
+                        { pubkey: metadataPda, isSigner: false, isWritable: true },
+                        { pubkey: mintKeypair.publicKey, isSigner: false, isWritable: false },
+                        { pubkey: userPublicKey, isSigner: true, isWritable: false }, // mintAuthority
+                        { pubkey: userPublicKey, isSigner: true, isWritable: true },  // payer
+                        { pubkey: userPublicKey, isSigner: false, isWritable: false }, // updateAuthority (initially user's wallet)
+                        { pubkey: SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+                        { pubkey: SolanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+                    ],
+                    programId: METADATA_PROGRAM_ID,
+                    data: Buffer.from(metadataInstructionData),
+                });
+                transaction.add(createMetadataInstruction);
+                // --- End Metaplex Instruction ---
 
-                // For the "Immutable Metadata" checkbox, this flag primarily applies to the Metaplex token metadata.
-                // If a token's metadata is set to immutable, it cannot be changed later.
-                // In the context of a client-side only script without the full Metaplex SDK, this is hard to implement correctly.
-                // I'll add the necessary keys, but the `data` part for Metaplex is usually serialized by the SDK.
-                
-                // Let's use a simpler approach for metadata: The name, symbol, and URI are part of the `InitializeMint` and `MintTo` instructions.
-                // Metaplex is for richer, off-chain metadata linked on-chain.
-                // The provided screenshots imply full Metaplex. The instruction `createCreateMetadataAccountV3Instruction` is indeed what's needed.
-                // But its `data` field requires a `DataV2` object to be BORSCH-serialized.
-
-                // Due to the constraint of a single HTML file without module imports for `@metaplex-foundation/mpl-token-metadata`,
-                // providing a *correct* `createCreateMetadataAccountV3Instruction` manually is practically impossible.
-                // I will provide the SPL token creation and fee transfer which are straightforward.
-                // For Metaplex metadata, it would typically involve:
-                // 1. Install `@metaplex-foundation/mpl-token-metadata`
-                // 2. Import `createCreateMetadataAccountV3Instruction`
-                // 3. Construct the `dataV2` object and pass it.
-
-                // So, for "metadata lengkap semua", I will assume a server-side component for Metaplex or instruct the user
-                // to add the Metaplex SDK if they want client-side.
-                // For now, I'll focus on the core SPL token creation and fee transfer.
-
-                // --- Re-evaluating Metadata for Single HTML ---
-                // The simplest way to handle *some* metadata on-chain for a single HTML is via `TokenkegProgram.setAuthority` for `MintAuthority` and `FreezeAuthority`.
-                // For the *rich* metadata (name, symbol, URI, description, creators, etc.) which is what Metaplex does,
-                // it's highly dependent on the SDK for serialization.
-                // I will omit the *full* Metaplex metadata instruction due to the complexity of manual serialization in this context.
-                // I will still set the mint and freeze authorities correctly and revoke them if chosen.
 
                 // 8. Revoke Mint Authority (if checked)
                 if (revokeMint) {
@@ -842,7 +779,7 @@
 
             } catch (error) {
                 console.error('Kesalahan saat membuat token:', error);
-                showToast(`Gagal membuat token: ${error.message}`, true);
+                showToast(`Gagal membuat token: ${error.message || error}`, true);
                 if (error.code === 4001) {
                     showToast('Transaksi ditolak oleh pengguna.', true);
                 }
@@ -853,11 +790,16 @@
         }
 
         // --- Event Listeners ---
-        createSolanaTokenNowBtn.addEventListener('click', () => {
-            connectWalletSection.classList.remove('hidden');
-            // Hide hero section or adjust as needed
-            createSolanaTokenNowBtn.parentElement.classList.add('hidden'); // Hide the hero section after clicking
-        });
+        if (createSolanaTokenNowBtn) {
+            createSolanaTokenNowBtn.addEventListener('click', () => {
+                console.log('Create Solana Token Now button clicked!');
+                heroSection.classList.add('hidden'); // Hide the hero section
+                connectWalletSection.classList.remove('hidden'); // Show the connect wallet section
+            });
+        } else {
+            console.error("Error: createSolanaTokenNowBtn element not found!");
+        }
+        
 
         connectPhantomBtn.addEventListener('click', connectPhantom);
         revokeMintAuthorityCheckbox.addEventListener('change', updatePricing);
@@ -882,30 +824,36 @@
 
         // Check for existing Phantom connection on load
         window.onload = async () => {
+            console.log("Window loaded.");
             if ('solana' in window && window.solana.isPhantom) {
                 try {
                     // Try to reconnect silently
-                    await window.solana.connect({ onlyIfTrusted: true });
-                    if (window.solana.publicKey) {
-                        userPublicKey = window.solana.publicKey;
+                    const resp = await window.solana.connect({ onlyIfTrusted: true });
+                    if (resp && resp.publicKey) {
+                        userPublicKey = resp.publicKey;
                         phantomWallet = window.solana;
+                        console.log('Phantom auto-reconnected.');
+                        
+                        heroSection.classList.add('hidden'); // Hide hero if auto-connected
+                        connectWalletSection.classList.add('hidden'); // Also hide connect wallet section
+                        createTokenFormSection.classList.remove('hidden'); // Directly show form
+                        
                         walletAddressDisplay.textContent = `Connected: ${userPublicKey.toBase58().substring(0, 6)}...${userPublicKey.toBase58().slice(-6)}`;
                         walletAddressDisplay.classList.remove('hidden');
                         connectPhantomBtn.textContent = 'Wallet Connected';
                         connectPhantomBtn.disabled = true;
-                        
-                        connectWalletSection.classList.add('hidden');
-                        createTokenFormSection.classList.remove('hidden');
-                        createSolanaTokenNowBtn.parentElement.classList.add('hidden'); // Hide hero if auto-connected
                         showToast('Phantom Wallet terhubung kembali.');
+                    } else {
+                        console.log('Phantom not auto-reconnected, showing hero/connect wallet.');
+                        heroSection.classList.remove('hidden'); // Show hero if no auto-connect
                     }
                 } catch (error) {
                     console.log('No auto-reconnect or connection failed:', error);
-                    // If silent reconnect fails, display connect button
-                    connectWalletSection.classList.remove('hidden');
+                    heroSection.classList.remove('hidden'); // Show hero if auto-connect failed
                 }
             } else {
-                connectWalletSection.classList.remove('hidden');
+                console.log('Phantom not found or not installed, showing hero/connect wallet.');
+                heroSection.classList.remove('hidden'); // Ensure hero is visible
             }
         };
     </script>
