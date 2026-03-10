@@ -1,514 +1,627 @@
-// ==============================================
-// DARDCOR AI: CREATE TOKEN SPL PRO - READY TO RUN
-// ==============================================
-// ✅ LENGKAP & SIAP PAKAI - TINGGAL COPY-PASTE & JALANKAN
-// ✅ SEMUA KONFIGURASI SUDAH DIISI SESUAI PERMINTAAN ANDA
-// ✅ HANYA PERLU GANTI: PRIVATE KEY WALLET ANDA SAJA
-// ==============================================
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dardcor SPL Token Factory - Solana</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts (Poppins) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            @apply bg-gray-900 text-gray-100;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300;
+        }
+        .btn-secondary {
+            @apply bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-2 px-4 rounded transition duration-300;
+        }
+        input[type="text"], input[type="number"] {
+            @apply bg-gray-800 border border-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .message {
+            @apply p-3 mt-4 rounded-md text-sm;
+        }
+        .message.success {
+            @apply bg-green-800 text-green-200;
+        }
+        .message.error {
+            @apply bg-red-800 text-red-200;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4">
 
-require('dotenv').config();
-const {
-    Connection,
-    Keypair,
-    PublicKey,
-    Transaction,
-    SystemProgram,
-    LAMPORTS_PER_SOL,
-    sendAndConfirmRawTransaction
-} = require('@solana/web3.js');
-const {
-    createInitializeMintInstruction,
-    MINT_SIZE,
-    getMinimumBalanceForRentExemptMint,
-    createMintToInstruction,
-    getAssociatedTokenAddress,
-    createAssociatedTokenAccountInstruction
-} = require('@solana/spl-token');
-const {
-    Metadata,
-    DataV2,
-    createCreateMetadataAccountV2Instruction
-} = require('@metaplex-foundation/mpl-token-metadata');
-const bs58 = require('bs58');
+    <header class="w-full max-w-4xl flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-blue-500">Dardcor SPL Token Factory</h1>
+        <div id="wallet-container" class="flex items-center space-x-4">
+            <span id="wallet-address" class="text-gray-400 text-sm hidden md:block">Belum Terhubung</span>
+            <button id="connect-wallet-btn" class="btn-primary">
+                <i class="fas fa-wallet mr-2"></i>Hubungkan Wallet
+            </button>
+            <button id="disconnect-wallet-btn" class="btn-secondary hidden">
+                <i class="fas fa-power-off mr-2"></i>Putuskan
+            </button>
+        </div>
+    </header>
 
-// ==============================================
-// ✅ KONFIGURASI SUDAH DIISI LENGKAP
-// ==============================================
-const CONFIG = {
-    // 🔑 HELIUS API (SUDAH DIISI SESUAI PERMINTAAN ANDA)
-    HELIUS_API_KEY: '8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1',
-    HELIUS_JWT: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE',
-    
-    // 💰 FEE WALLET (SUDAH DIISI SESUAI PERMINTAAN ANDA)
-    FEE_WALLET: new PublicKey('38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8'),
-    
-    // 📊 FEE STRUCTURE (SUDAH DIISI SESUAI PERMINTAAN ANDA - 0.20 + 0.05 + 0.05 = 0.30 SOL)
-    BASE_SERVICE_FEE: 0.20,
-    MINT_FEE: 0.05,
-    FREEZE_FEE: 0.05,
-    
-    // 🪙 TOKEN METADATA (CONTOH - GANTI JIKA INGIN DIUBAH SESUAI KEINGINAN ANDA)
-    TOKEN_METADATA: {
-        name: 'Dardcor AI Token',         // Nama token Anda
-        symbol: 'DARD',                  // Simbol token Anda (3-5 karakter disarankan)
-        description: 'Official token of Dardcor AI ecosystem. Superintelligent digital entity token.', // Deskripsi token Anda
-        image: 'https://i.imgur.com/yourimage.png', // GANTI DENGAN URL GAMBAR TOKEN ANDA (PNG 1000x1000px disarankan, harus URL publik)
-        external_link: 'https://dardcor.ai' // Link ke website atau proyek Anda (opsional)
-    },
-    
-    // ⚙️ TOKEN CONFIGURATION (SUDAH DIISI SESUAI PERMINTAAN ANDA)
-    TOKEN_DECIMALS: 9,                  // Jumlah desimal token (biasanya 9 untuk SPL Token)
-    INITIAL_SUPPLY: 1000000000,         // Jumlah supply awal token (contoh: 1 miliar)
-    ENABLE_FREEZE: true,                // ✅ Aktifkan Freeze Authority (membutuhkan 0.05 SOL tambahan)
-    ENABLE_MINT: true,                  // ✅ Aktifkan Minting Supply Awal (membutuhkan 0.05 SOL tambahan)
-    
-    // 🔐 PRIVATE KEY WALLET ANDA (HARUS DIISI DI FILE .env ATAU LANGSUNG DI SINI)
-    // CARA PALING AMAN: Buat file .env di folder yang sama dengan script ini.
-    // Isi file .env dengan: WALLET_PRIVATE_KEY=your_private_key_base58_here
-    // JIKA TIDAK MENGGUNAKAN .env, GANTI 'ISI_PRIVATE_KEY_ANDA_DISINI' dengan private key Anda secara langsung.
-    WALLET_PRIVATE_KEY: process.env.WALLET_PRIVATE_KEY || 'ISI_PRIVATE_KEY_ANDA_DISINI',
-};
+    <main class="w-full max-w-4xl flex flex-col lg:flex-row gap-8">
+        <!-- Token Creation Section -->
+        <section class="glassmorphism p-6 flex-1">
+            <h2 class="text-2xl font-semibold mb-6 text-blue-400">Buat Token SPL Baru</h2>
+            <form id="create-token-form" class="space-y-4">
+                <div>
+                    <label for="token-name" class="block text-gray-300 text-sm font-bold mb-2">Nama Token:</label>
+                    <input type="text" id="token-name" placeholder="Dardcor Token" class="w-full" required>
+                </div>
+                <div>
+                    <label for="token-symbol" class="block text-gray-300 text-sm font-bold mb-2">Simbol Token:</label>
+                    <input type="text" id="token-symbol" placeholder="DRDC" class="w-full" required>
+                </div>
+                <div>
+                    <label for="token-decimals" class="block text-gray-300 text-sm font-bold mb-2">Desimal (Presisi):</label>
+                    <input type="number" id="token-decimals" value="9" min="0" max="9" class="w-full" required>
+                </div>
+                <div>
+                    <label for="initial-supply" class="block text-gray-300 text-sm font-bold mb-2">Suplai Awal:</label>
+                    <input type="number" id="initial-supply" value="1000000" min="1" class="w-full" required>
+                </div>
+                <button type="submit" id="create-token-btn" class="btn-primary w-full flex items-center justify-center">
+                    <span id="create-token-btn-text">Buat Token</span>
+                    <div id="create-token-spinner" class="spinner ml-2 hidden"></div>
+                </button>
+                <div id="create-token-message" class="message hidden"></div>
+            </form>
+        </section>
 
-// ==============================================
-// 📝 INSTRUKSI LENGKAP - HARAP BACA DENGAN SEKSAMA!
-// ==============================================
-console.log(`
-╔═══════════════════════════════════════════════════════════════╗
-║                   🚀 CREATE TOKEN SPL PRO                     ║
-║         SCRIPT INI UNTUK TERMINAL/CMD, BUKAN BROWSER!       ║
-╚═══════════════════════════════════════════════════════════════╝
+        <!-- Token Information & Management Section -->
+        <section class="glassmorphism p-6 flex-1">
+            <h2 class="text-2xl font-semibold mb-6 text-blue-400">Informasi & Kelola Token</h2>
+            <div id="token-info" class="space-y-4">
+                <div>
+                    <p class="text-gray-300 text-sm font-bold">Mint Address:</p>
+                    <a id="mint-address-display" class="text-blue-300 hover:underline break-all" target="_blank" rel="noopener noreferrer">Belum ada token dibuat</a>
+                </div>
+                <div>
+                    <p class="text-gray-300 text-sm font-bold">Total Suplai:</p>
+                    <p id="total-supply-display" class="text-lg font-semibold">0</p>
+                </div>
+                <div>
+                    <p class="text-gray-300 text-sm font-bold">Tautan Transaksi Terakhir:</p>
+                    <a id="transaction-link-display" class="text-blue-300 hover:underline break-all" target="_blank" rel="noopener noreferrer">Tidak ada</a>
+                </div>
+            </div>
 
-🔴 LANGKAH 1: SIAPKAN PRIVATE KEY WALLET ANDA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Anda MEMERLUKAN private key dari wallet Solana Anda untuk menandatangani transaksi minting token.
+            <hr class="border-gray-700 my-8">
 
-Bagaimana cara mendapatkannya:
-1.  **Phantom Wallet**: Buka Phantom → Settings → "Show Secret Recovery Phrase" (hati-hati) → lalu cari opsi "Export Private Key" untuk alamat wallet spesifik Anda. Ini akan memberi Anda string base58.
-2.  **Solflare Wallet**: Buka Solflare → Settings → "Export Private Key" untuk alamat wallet spesifik Anda. Ini juga akan memberi Anda string base58.
-3.  **Solana CLI**: Jika Anda menggunakan `solana-keygen new --outfile wallet.json`, Anda bisa membuka file `wallet.json` untuk mendapatkan array angka. Atau, Anda bisa menggunakan `solana-keygen pubkey --output-type base58 wallet.json` untuk mendapatkan base58 string.
+            <!-- Mint More Tokens -->
+            <h3 class="text-xl font-semibold mb-4 text-blue-300">Cetak Lebih Banyak Token</h3>
+            <form id="mint-more-form" class="space-y-4">
+                <div>
+                    <label for="mint-amount" class="block text-gray-300 text-sm font-bold mb-2">Jumlah Cetak:</label>
+                    <input type="number" id="mint-amount" min="1" class="w-full" required>
+                </div>
+                <button type="submit" id="mint-more-btn" class="btn-secondary w-full flex items-center justify-center" disabled>
+                    <span id="mint-more-btn-text">Cetak Token</span>
+                    <div id="mint-more-spinner" class="spinner ml-2 hidden"></div>
+                </button>
+                <div id="mint-more-message" class="message hidden"></div>
+            </form>
 
-⚠️  **PERINGATAN SANGAT PENTING**: JANGAN PERNAH MENGGUNAKAN "SEED PHRASE" (12 atau 24 kata) sebagai private key! Private key adalah string panjang yang spesifik untuk satu alamat, BUKAN seed phrase.
-⚠️  **REKOMENDASI**: Gunakan wallet baru yang khusus Anda buat untuk proses minting token ini. Isi wallet tersebut dengan dana secukupnya (sekitar **0.5 - 1 SOL** sudah cukup untuk biaya). Ini untuk meminimalkan risiko terhadap dana utama Anda.
+            <hr class="border-gray-700 my-8">
 
-🔴 LANGKAH 2: BUAT DAN ISI FILE .env
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Di folder yang sama tempat Anda menyimpan script `create-token-spl.js` ini, buatlah sebuah file baru dengan nama:
-`.env`
+            <!-- Transfer Tokens -->
+            <h3 class="text-xl font-semibold mb-4 text-blue-300">Transfer Token</h3>
+            <form id="transfer-form" class="space-y-4">
+                <div>
+                    <label for="transfer-recipient" class="block text-gray-300 text-sm font-bold mb-2">Penerima (Public Key):</label>
+                    <input type="text" id="transfer-recipient" placeholder="Recipient's Public Key" class="w-full" required>
+                </div>
+                <div>
+                    <label for="transfer-amount" class="block text-gray-300 text-sm font-bold mb-2">Jumlah Transfer:</label>
+                    <input type="number" id="transfer-amount" min="1" class="w-full" required>
+                </div>
+                <button type="submit" id="transfer-btn" class="btn-secondary w-full" disabled>Transfer Token</button>
+                <div id="transfer-message" class="message hidden"></div>
+            </form>
 
-Kemudian, isi file `.env` tersebut dengan baris berikut (GANTI "your_private_key_base58_here" dengan private key base58 milik Anda):
+            <hr class="border-gray-700 my-8">
 
-\`\`\`
-WALLET_PRIVATE_KEY=your_private_key_base58_here
-\`\`\`
+            <!-- Burn Tokens -->
+            <h3 class="text-xl font-semibold mb-4 text-blue-300">Bakar Token</h3>
+            <form id="burn-form" class="space-y-4">
+                <div>
+                    <label for="burn-amount" class="block text-gray-300 text-sm font-bold mb-2">Jumlah Bakar:</label>
+                    <input type="number" id="burn-amount" min="1" class="w-full" required>
+                </div>
+                <button type="submit" id="burn-btn" class="btn-secondary w-full" disabled>Bakar Token</button>
+                <div id="burn-message" class="message hidden"></div>
+            </form>
+        </section>
+    </main>
 
-Contoh isi file `.env` yang benar:
-\`\`\`
-WALLET_PRIVATE_KEY=5v3fG8xL2p9... (ini adalah contoh, isi dengan private key base58 Anda)
-\`\`\`
-Jika private key Anda adalah array angka (misal dari `wallet.json`), Anda bisa mengisinya sebagai string JSON:
-\`\`\`
-WALLET_PRIVATE_KEY=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
-\`\`\`
+    <footer class="mt-8 text-gray-500 text-sm">
+        Dardcor SPL Token Factory &copy; 2024
+    </footer>
 
-🔴 LANGKAH 3: INSTALL DEPENDENSI YANG DIBUTUHKAN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Pastikan Anda sudah menginstal **Node.js dan npm**. Jika belum, instal dulu.
-Buka **Terminal (di macOS/Linux) atau Command Prompt/PowerShell (di Windows)**.
-Navigasikan ke folder tempat Anda menyimpan script ini. Lalu, jalankan perintah berikut untuk menginstal semua library yang dibutuhkan:
+    <!-- JavaScript untuk interaksi Solana -->
+    <script type="module">
+        import { Connection, PublicKey, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction } from 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
+        import { getOrCreateAssociatedTokenAccount, createInitializeMintInstruction, createMintToInstruction, createTransferInstruction, createBurnInstruction, MINT_SIZE, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from 'https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js';
 
-\`\`\`bash
-npm init -y
-npm install @solana/web3.js @solana/spl-token @metaplex-foundation/mpl-token-metadata bs58 dotenv
-\`\`\`
+        // Konfigurasi Solana
+        const SOLANA_NETWORK = 'devnet'; // Anda bisa ganti ke 'mainnet-beta' untuk transaksi nyata
+        const connection = new Connection(`https://api.${SOLANA_NETWORK}.solana.com`, 'confirmed');
 
-🔴 LANGKAH 4: JALANKAN SCRIPT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Setelah semua langkah di atas selesai (private key sudah di .env, dependencies sudah terinstal), Anda bisa menjalankan script.
-Di Terminal/CMD yang sama, jalankan perintah ini:
+        // Elemen UI
+        const connectWalletBtn = document.getElementById('connect-wallet-btn');
+        const disconnectWalletBtn = document.getElementById('disconnect-wallet-btn');
+        const walletAddressSpan = document.getElementById('wallet-address');
+        const createTokenForm = document.getElementById('create-token-form');
+        const createTokenBtn = document.getElementById('create-token-btn');
+        const createTokenBtnText = document.getElementById('create-token-btn-text');
+        const createTokenSpinner = document.getElementById('create-token-spinner');
+        const createTokenMessage = document.getElementById('create-token-message');
+        const mintAddressDisplay = document.getElementById('mint-address-display');
+        const totalSupplyDisplay = document.getElementById('total-supply-display');
+        const transactionLinkDisplay = document.getElementById('transaction-link-display');
+        const mintMoreForm = document.getElementById('mint-more-form');
+        const mintMoreBtn = document.getElementById('mint-more-btn');
+        const mintMoreBtnText = document.getElementById('mint-more-btn-text');
+        const mintMoreSpinner = document.getElementById('mint-more-spinner');
+        const mintMoreMessage = document.getElementById('mint-more-message');
+        const transferForm = document.getElementById('transfer-form');
+        const transferBtn = document.getElementById('transfer-btn');
+        const transferMessage = document.getElementById('transfer-message');
+        const burnForm = document.getElementById('burn-form');
+        const burnBtn = document.getElementById('burn-btn');
+        const burnMessage = document.getElementById('burn-message');
 
-\`\`\`bash
-node create-token-spl.js
-\`\`\`
+        let walletProvider = null;
+        let payerPublicKey = null;
+        let currentMint = null; // Public Key of the created token mint
 
-Script akan mulai berjalan, menampilkan log proses di terminal Anda.
-
-🔴 LANGKAH 5: VERIFIKASI HASIL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Jika script berhasil dieksekusi, Anda akan melihat output yang berisi informasi penting tentang token yang baru Anda buat, termasuk alamat Mint Address, Metadata PDA, dan Transaction Signature.
-Anda bisa memverifikasinya di Solana Explorer (Solscan) menggunakan link yang disediakan di output:
-
-•   **Lihat Token di Solscan**: \`https://solscan.io/token/<TOKEN_MINT_ADDRESS_ANDA>?cluster=mainnet-beta\`
-•   **Lihat Detail Transaksi**: \`https://solscan.io/tx/<TRANSACTION_SIGNATURE_ANDA>?cluster=mainnet-beta\`
-
-╔═══════════════════════════════════════════════════════════════╗
-║  💰 TOTAL BIAYA (FEE) UNTUK PROSES INI ADALAH SEKITAR 0.30 SOL. ║
-║     (0.20 SOL untuk layanan dasar, 0.05 SOL untuk mint awal,   ║
-║      dan 0.05 SOL untuk mengaktifkan freeze authority).       ║
-║  💸 BIAYA INI AKAN OTOMATIS TERKIRIM KE WALLET:                ║
-║     \`38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8\`             ║
-╚═══════════════════════════════════════════════════════════════╝
-`);
-
-// ==============================================
-// HELPER FUNCTIONS (Fungsi Pembantu)
-// ==============================================
-function lamportsToSol(lamports) {
-    return lamports / LAMPORTS_PER_SOL;
-}
-
-function solToLamports(sol) {
-    return Math.floor(sol * LAMPORTS_PER_SOL);
-}
-
-function formatSol(amount) {
-    return amount.toFixed(9) + ' SOL';
-}
-
-function generateMetadataUri(metadata) {
-    const metadataJson = {
-        name: metadata.name,
-        symbol: metadata.symbol,
-        description: metadata.description,
-        image: metadata.image,
-        external_link: metadata.external_link || null,
-        attributes: [
-            { trait_type: 'creator', value: 'Dardcor AI' },
-            { trait_type: 'version', value: '1.0.0' },
-            { trait_type: 'blockchain', value: 'Solana' }
-        ]
-    };
-    // Mengubah JSON metadata menjadi Base64 string untuk URI data
-    return `data:application/json;base64,${Buffer.from(JSON.stringify(metadataJson)).toString('base64')}`;
-}
-
-// ==============================================
-// ✅ VALIDASI KONFIGURASI (Pengecekan Awal)
-// ==============================================
-function validateConfig() {
-    const errors = [];
-    
-    if (!CONFIG.HELIUS_API_KEY || CONFIG.HELIUS_API_KEY === '') {
-        errors.push('HELIUS_API_KEY kosong. Mohon periksa kembali konfigurasi Anda.');
-    }
-    
-    if (!CONFIG.HELIUS_JWT || CONFIG.HELIUS_JWT === '') {
-        errors.push('HELIUS_JWT kosong. Mohon periksa kembali konfigurasi Anda.');
-    }
-    
-    if (CONFIG.WALLET_PRIVATE_KEY === 'ISI_PRIVATE_KEY_ANDA_DISINI' || 
-        CONFIG.WALLET_PRIVATE_KEY === 'YOUR_PRIVATE_KEY_HERE' || !CONFIG.WALLET_PRIVATE_KEY) {
-        errors.push('WALLET_PRIVATE_KEY belum diisi atau formatnya tidak valid!');
-        errors.push('👉 Mohon buat file .env di folder yang sama dan isi dengan: WALLET_PRIVATE_KEY=your_base58_key_here');
-    }
-    
-    if (!CONFIG.TOKEN_METADATA.name) {
-        errors.push('TOKEN_METADATA.name kosong. Mohon diisi dengan nama token Anda.');
-    }
-    
-    if (!CONFIG.TOKEN_METADATA.symbol) {
-        errors.push('TOKEN_METADATA.symbol kosong. Mohon diisi dengan simbol token Anda.');
-    }
-
-    if (!CONFIG.TOKEN_METADATA.image || !CONFIG.TOKEN_METADATA.image.startsWith('http')) {
-        console.warn('⚠️  PERINGATAN: URL gambar token belum diisi atau tidak valid. Metadata token Anda mungkin tidak akan menampilkan gambar.');
-    }
-    
-    if (errors.length > 0) {
-        console.error('\n❌ VALIDASI KONFIGURASI GAGAL! Mohon perbaiki masalah berikut:');
-        errors.forEach(err => console.error(`   • ${err}`));
-        console.log('\n💡 SOLUSI: Periksa instruksi di bagian atas script ini dan sesuaikan file .env serta bagian CONFIG.');
-        process.exit(1); // Menghentikan eksekusi jika ada error konfigurasi
-    }
-}
-
-// ==============================================
-// 🚀 MAIN FUNCTION - FUNGSI UTAMA UNTUK MEMBUAT TOKEN SPL
-// ==============================================
-async function main() {
-    console.log('\n' + '='.repeat(60));
-    console.log('🚀 DARDCOR AI: CREATE TOKEN SPL PRO - Starting Execution...');
-    console.log('='.repeat(60) + '\n');
-    
-    try {
-        validateConfig(); // Jalankan validasi konfigurasi di awal
-        
-        // 1. SETUP KONEKSI KE SOLANA BLOCKCHAIN
-        console.log('[1/8] 🔌 Establishing connection to Solana Mainnet via Helius RPC...');
-        const connection = new Connection(
-            `https://mainnet.helius-rpc.com/?api-key=${CONFIG.HELIUS_API_KEY}`,
-            'confirmed' // Menggunakan 'confirmed' commitment level
-        );
-        
-        const version = await connection.getVersion();
-        console.log(`   ✅ Successfully connected to Solana ${version['solana-core']} (using Helius RPC)`);
-        
-        // 2. MEMUAT WALLET DARI PRIVATE KEY
-        console.log('\n[2/8] 🔑 Loading your wallet Keypair from provided Private Key...');
-        let walletKeypair;
-        
-        // Logic untuk mencoba decode private key dari format base58 atau array angka
-        try {
-            // Coba sebagai base58 string dulu
-            walletKeypair = Keypair.fromSecretKey(bs58.decode(CONFIG.WALLET_PRIVATE_KEY));
-        } catch (e) {
-            try {
-                // Jika gagal, coba asumsikan itu adalah JSON array angka
-                walletKeypair = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(CONFIG.WALLET_PRIVATE_KEY)));
-            } catch (e2) {
-                throw new Error('❌ Format WALLET_PRIVATE_KEY tidak valid. Mohon gunakan base58 string atau JSON array angka.');
+        // Fungsi untuk mengupdate UI wallet
+        function updateWalletUI() {
+            if (payerPublicKey) {
+                walletAddressSpan.textContent = `Wallet: ${payerPublicKey.toBase58().substring(0, 6)}...${payerPublicKey.toBase58().slice(-6)}`;
+                walletAddressSpan.classList.remove('hidden');
+                connectWalletBtn.classList.add('hidden');
+                disconnectWalletBtn.classList.remove('hidden');
+                createTokenBtn.disabled = false;
+                mintMoreBtn.disabled = !currentMint;
+                transferBtn.disabled = !currentMint;
+                burnBtn.disabled = !currentMint;
+            } else {
+                walletAddressSpan.textContent = 'Belum Terhubung';
+                walletAddressSpan.classList.add('hidden');
+                connectWalletBtn.classList.remove('hidden');
+                disconnectWalletBtn.classList.add('hidden');
+                createTokenBtn.disabled = true;
+                mintMoreBtn.disabled = true;
+                transferBtn.disabled = true;
+                burnBtn.disabled = true;
             }
         }
-        
-        console.log(`   👤 Your Wallet Public Address: ${walletKeypair.publicKey.toBase58()}`);
-        
-        // 3. MEMERIKSA SALDO WALLET DAN MENGHITUNG BIAYA
-        console.log('\n[3/8] 💰 Checking wallet balance and calculating total fees...');
-        const balance = await connection.getBalance(walletKeypair.publicKey);
-        const balanceSol = lamportsToSol(balance);
-        console.log(`   💵 Current Balance of your wallet: ${formatSol(balanceSol)}`);
-        
-        // Menghitung total biaya berdasarkan konfigurasi
-        let totalFee = CONFIG.BASE_SERVICE_FEE;
-        if (CONFIG.ENABLE_MINT) totalFee += CONFIG.MINT_FEE;
-        if (CONFIG.ENABLE_FREEZE) totalFee += CONFIG.FREEZE_FEE;
-        const totalFeeLamports = solToLamports(totalFee);
-        
-        console.log(`   📊 Calculated Fee Breakdown:`);
-        console.log(`      - Base Service Fee: ${CONFIG.BASE_SERVICE_FEE} SOL`);
-        console.log(`      - Initial Minting Fee: ${CONFIG.ENABLE_MINT ? CONFIG.MINT_FEE : 0} SOL`);
-        console.log(`      - Freeze Authority Setup Fee: ${CONFIG.ENABLE_FREEZE ? CONFIG.FREEZE_FEE : 0} SOL`);
-        console.log(`      - ESTIMATED TOTAL FEE: ${totalFee} SOL`);
-        
-        // Tambahkan sedikit buffer untuk biaya transaksi Solana itu sendiri (sekitar 0.000005 SOL per instruksi)
-        const transactionCostBuffer = solToLamports(0.0001); // Buffer 0.0001 SOL untuk keamanan
-        if (balance < totalFeeLamports + transactionCostBuffer) {
-            throw new Error(`❌ SALDO TIDAK CUKUP! Wallet Anda membutuhkan minimal ${formatSol(totalFee + lamportsToSol(transactionCostBuffer))} SOL untuk melanjutkan. Anda hanya memiliki ${formatSol(balanceSol)} SOL.`);
+
+        // Fungsi untuk menghubungkan wallet (Phantom)
+        async function connectWallet() {
+            try {
+                if (window.solana && window.solana.isPhantom) {
+                    walletProvider = window.solana;
+                    const resp = await walletProvider.connect();
+                    payerPublicKey = new PublicKey(resp.publicKey.toString());
+                    console.log('Wallet terhubung:', payerPublicKey.toBase58());
+                    updateWalletUI();
+                } else {
+                    alert('Phantom Wallet tidak ditemukan. Silakan instal Phantom.');
+                    window.open('https://phantom.app/', '_blank');
+                }
+            } catch (err) {
+                console.error('Gagal menghubungkan wallet:', err);
+                alert('Gagal menghubungkan wallet. Pastikan Anda telah menyetujui koneksi.');
+            }
         }
-        
-        // 4. MEMBUAT AKUN MINT BARU (UNTUK TOKEN SPL ANDA)
-        console.log('\n[4/8] 🪙 Generating new token Mint Account...');
-        const mintKeypair = Keypair.generate(); // Generate keypair baru untuk Mint Account
-        const mintPubkey = mintKeypair.publicKey;
-        console.log(`   🆔 New SPL Token Mint Address: ${mintPubkey.toBase58()}`);
-        
-        const mintRent = await getMinimumBalanceForRentExemptMint(connection); // Mendapatkan biaya sewa untuk akun mint
-        console.log(`   💸 Rent-Exempt Deposit for Mint Account: ${lamportsToSol(mintRent)} SOL`);
-        
-        // 5. MEMBANGUN INSTRUKSI TRANSAKSI AWAL
-        console.log('\n[5/8] ⚙️ Building initial transaction instructions...');
-        let instructions = [];
-        
-        // Instruction 1: Membuat akun baru di blockchain untuk Mint Account
-        instructions.push(
-            SystemProgram.createAccount({
-                fromPubkey: walletKeypair.publicKey, // Payer (wallet Anda)
-                newAccountPubkey: mintPubkey,        // Alamat akun mint yang baru dibuat
-                space: MINT_SIZE,                    // Ukuran ruang yang dibutuhkan untuk akun mint
-                lamports: mintRent,                  // Deposit rent-exempt
-                programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Program ID SPL Token
-            })
-        );
-        
-        // Instruction 2: Menginisialisasi akun mint (menentukan desimal, mint authority, freeze authority)
-        instructions.push(
-            createInitializeMintInstruction(
-                mintPubkey,
-                CONFIG.TOKEN_DECIMALS,
-                walletKeypair.publicKey, // Wallet Anda sebagai Mint Authority (bisa mint token)
-                CONFIG.ENABLE_FREEZE ? walletKeypair.publicKey : null // Wallet Anda sebagai Freeze Authority (bisa membekukan token), atau null jika tidak diaktifkan
-            )
-        );
-        console.log('   • Instructions for creating and initializing Mint Account added.');
-        
-        // 6. MINTING SUPPLY AWAL TOKEN KE WALLET ANDA (JIKA DIAKTIFKAN)
-        let associatedTokenAddress;
-        if (CONFIG.ENABLE_MINT) {
-            console.log('\n[6/8] 🎯 Preparing to mint initial token supply to your wallet...');
-            associatedTokenAddress = await getAssociatedTokenAddress(
-                mintPubkey,
-                walletKeypair.publicKey
-            );
-            
-            // Memeriksa apakah Associated Token Account (ATA) sudah ada untuk wallet Anda dan token ini
-            const accountInfo = await connection.getAccountInfo(associatedTokenAddress);
-            if (!accountInfo) {
-                // Instruction 3: Membuat Associated Token Account jika belum ada
-                instructions.push(
-                    createAssociatedTokenAccountInstruction(
-                        walletKeypair.publicKey, // Payer
-                        associatedTokenAddress,  // Alamat ATA yang akan dibuat
-                        walletKeypair.publicKey, // Pemilik ATA (wallet Anda)
-                        mintPubkey               // Token Mint untuk ATA ini
+
+        // Fungsi untuk memutuskan wallet
+        async function disconnectWallet() {
+            try {
+                if (walletProvider) {
+                    await walletProvider.disconnect();
+                    payerPublicKey = null;
+                    currentMint = null;
+                    console.log('Wallet terputus.');
+                    updateWalletUI();
+                    // Reset token info
+                    mintAddressDisplay.textContent = 'Belum ada token dibuat';
+                    mintAddressDisplay.href = '#';
+                    totalSupplyDisplay.textContent = '0';
+                    transactionLinkDisplay.textContent = 'Tidak ada';
+                    transactionLinkDisplay.href = '#';
+                }
+            } catch (err) {
+                console.error('Gagal memutuskan wallet:', err);
+            }
+        }
+
+        // Fungsi untuk menampilkan pesan
+        function showMessage(element, message, type = 'info') {
+            element.textContent = message;
+            element.className = `message ${type}`;
+            element.classList.remove('hidden');
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Fungsi untuk membuat token SPL
+        createTokenForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!payerPublicKey) {
+                showMessage(createTokenMessage, 'Harap hubungkan wallet terlebih dahulu.', 'error');
+                return;
+            }
+
+            createTokenBtn.disabled = true;
+            createTokenBtnText.classList.add('hidden');
+            createTokenSpinner.classList.remove('hidden');
+            createTokenMessage.classList.add('hidden');
+
+            const tokenName = document.getElementById('token-name').value;
+            const tokenSymbol = document.getElementById('token-symbol').value;
+            const tokenDecimals = parseInt(document.getElementById('token-decimals').value);
+            const initialSupply = parseFloat(document.getElementById('initial-supply').value);
+
+            try {
+                // Generate new keypair for the mint authority
+                const mintAuthority = payerPublicKey; // Payer will also be the mint authority
+                const freezeAuthority = payerPublicKey; // Payer will also be the freeze authority
+
+                // Generate a new keypair for the mint account
+                const mintKeypair = Keypair.generate();
+
+                // Calculate the minimum balance for the mint account
+                const requiredBalance = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+
+                // Create the transaction
+                const transaction = new Transaction().add(
+                    SystemProgram.createAccount({
+                        fromPubkey: payerPublicKey,
+                        newAccountPubkey: mintKeypair.publicKey,
+                        space: MINT_SIZE,
+                        lamports: requiredBalance,
+                        programId: TOKEN_PROGRAM_ID,
+                    }),
+                    createInitializeMintInstruction(
+                        mintKeypair.publicKey,
+                        tokenDecimals,
+                        mintAuthority,
+                        freezeAuthority,
+                        TOKEN_PROGRAM_ID
                     )
                 );
-                console.log(`   • Creating new Associated Token Account (ATA): ${associatedTokenAddress.toBase58()}`);
-            } else {
-                console.log(`   • Associated Token Account (ATA) already exists: ${associatedTokenAddress.toBase58()}`);
-            }
-            
-            // Instruction 4: Mint supply awal token ke ATA Anda
-            instructions.push(
-                createMintToInstruction(
-                    mintPubkey,                                          // Mint Account
-                    associatedTokenAddress,                              // Destinasi (ATA Anda)
-                    walletKeypair.publicKey,                             // Mint Authority (penandatangan)
-                    CONFIG.INITIAL_SUPPLY * Math.pow(10, CONFIG.TOKEN_DECIMALS) // Jumlah token yang akan dicetak (disesuaikan dengan desimal)
-                )
-            );
-            console.log(`   • Minting ${CONFIG.INITIAL_SUPPLY} tokens (with ${CONFIG.TOKEN_DECIMALS} decimals) to your ATA.`);
-            console.log(`   📬 Initial Token Supply will be sent to: ${associatedTokenAddress.toBase58()}`);
-        } else {
-            console.log('\n[6/8] ⏭️ Skipping initial token minting (CONFIG.ENABLE_MINT is set to false).');
-        }
-        
-        // 7. MEMBUAT AKUN METADATA METAPLEX (UNTUK INFORMASI TOKEN)
-        console.log('\n[7/8] 📝 Creating Metaplex Token Metadata account...');
-        const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'); // Program ID Metaplex Token Metadata
-        const [metadataPDA] = PublicKey.findProgramAddressSync(
-            [
-                Buffer.from('metadata'),
-                METADATA_PROGRAM_ID.toBuffer(),
-                mintPubkey.toBuffer(),
-            ],
-            METADATA_PROGRAM_ID
-        );
-        
-        // Data metadata token sesuai konfigurasi
-        const metadataData = new DataV2({
-            name: CONFIG.TOKEN_METADATA.name,
-            symbol: CONFIG.TOKEN_METADATA.symbol,
-            uri: generateMetadataUri(CONFIG.TOKEN_METADATA), // URI data yang berisi metadata JSON (gambar, deskripsi, dll.)
-            sellerFeeBasisPoints: 0, // Royalty fee (umumnya 0 untuk token SPL standar)
-            creators: [{
-                address: walletKeypair.publicKey, // Wallet Anda sebagai creator
-                verified: true,                  // Otomatis terverifikasi karena Anda yang mint
-                share: 100                       // Berbagi 100% sebagai creator
-            }],
-            collection: null, // Tidak menggunakan fitur koleksi untuk token SPL biasa
-            uses: null        // Tidak menggunakan fitur 'uses'
-        });
-        
-        // Instruction 5 (atau selanjutnya): Membuat Akun Metadata
-        instructions.push(
-            createCreateMetadataAccountV2Instruction(
-                {
-                    metadata: metadataPDA,              // Alamat PDA metadata
-                    mint: mintPubkey,                   // Alamat Mint Account token
-                    mintAuthority: walletKeypair.publicKey, // Wallet Anda sebagai Mint Authority (juga pembuat metadata)
-                    payer: walletKeypair.publicKey,     // Payer (wallet Anda)
-                    updateAuthority: walletKeypair.publicKey // Wallet Anda sebagai Update Authority (bisa mengubah metadata nanti)
-                },
-                {
-                    createMetadataAccountArgsV2: {
-                        data: metadataData,
-                        isMutable: true, // Metadata bisa diubah di masa depan (misal: ganti gambar/deskripsi)
-                        collectionDetails: null
-                    }
-                }
-            )
-        );
-        console.log(`   📄 Metaplex Metadata Program Derived Address (PDA): ${metadataPDA.toBase58()}`);
-        console.log('   • Instructions for creating Metadata Account added.');
-        
-        // 8. MENGIRIM SEMUA TRANSAKSI KE SOLANA BLOCKCHAIN
-        console.log('\n[8/8] 📦 Combining all instructions and sending main transaction to Solana blockchain...');
-        const transaction = new Transaction().add(...instructions);
-        
-        // Mendapatkan blockhash terbaru untuk transaksi
-        const { blockhash } = await connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = walletKeypair.publicKey; // Wallet Anda sebagai pembayar biaya transaksi
-        transaction.sign(mintKeypair, walletKeypair); // Menandatangani transaksi dengan Mint Keypair dan Wallet Keypair
-        
-        console.log(`   ✍️ Main transaction signed with ${instructions.length} instructions.`);
-        console.log('   • Sending transaction... This might take a few moments.');
-        
-        const signature = await sendAndConfirmRawTransaction(
-            connection,
-            transaction.serialize(),
-            { commitment: 'confirmed', skipPreflight: false, preflightCommitment: 'confirmed' }
-        );
-        
-        console.log(`   ✅ Main Token Creation Transaction SUCCESS!`);
-        console.log(`   🔗 Transaction Signature: ${signature}`);
-        console.log(`   🕒 View on Solscan: https://solscan.io/tx/${signature}?cluster=mainnet-beta`);
-        
-        // 9. MEMBAYAR BIAYA LAYANAN
-        console.log('\n💰 Proceeding with service fee payment to Dardcor AI...');
-        const feeTransaction = new Transaction().add(
-            SystemProgram.transfer({
-                fromPubkey: walletKeypair.publicKey, // Payer (wallet Anda)
-                toPubkey: CONFIG.FEE_WALLET,         // Wallet penerima fee
-                lamports: totalFeeLamports           // Jumlah lamports fee
-            })
-        );
-        
-        const { blockhash: feeBlockhash } = await connection.getLatestBlockhash('finalized');
-        feeTransaction.recentBlockhash = feeBlockhash;
-        feeTransaction.feePayer = walletKeypair.publicKey; // Wallet Anda sebagai pembayar biaya
-        feeTransaction.sign(walletKeypair);             // Menandatangani transaksi fee
-        
-        const feeSignature = await sendAndConfirmRawTransaction(
-            connection,
-            feeTransaction.serialize(),
-            { commitment: 'confirmed', skipPreflight: false, preflightCommitment: 'confirmed' }
-        );
-        
-        console.log(`   ✅ Service Fee successfully paid: ${totalFee} SOL`);
-        console.log(`   🔗 Fee Transaction Signature: https://solscan.io/tx/${feeSignature}?cluster=mainnet-beta`);
-        console.log(`   💰 Fee Wallet Destination: ${CONFIG.FEE_WALLET.toBase58()}`);
-        
-        // 10. LAPORAN AKHIR DAN RINGKASAN
-        console.log('\n' + '='.repeat(60));
-        console.log('🎉 TOKEN SPL ANDA BERHASIL DIBUAT SEPENUHNYA!');
-        console.log('='.repeat(60));
-        
-        console.log('\n📋 INFORMASI DETAIL TOKEN ANDA:');
-        console.log(`   🪙 Token Mint Address: ${mintPubkey.toBase58()}`);
-        console.log(`   📄 Metadata PDA: ${metadataPDA.toBase58()}`);
-        console.log(`   💰 Token Account Anda: ${associatedTokenAddress ? associatedTokenAddress.toBase58() : 'N/A (Initial minting dinonaktifkan)'}`);
-        console.log(`   👤 Mint Authority (wallet Anda): ${walletKeypair.publicKey.toBase58()}`);
-        console.log(`   🧊 Freeze Authority: ${CONFIG.ENABLE_FREEZE ? walletKeypair.publicKey.toBase58() : 'Disabled (siapapun bisa membekukan/mencairkan token)'}`);
-        console.log(`   🔢 Decimals: ${CONFIG.TOKEN_DECIMALS}`);
-        console.log(`   📦 Initial Supply: ${CONFIG.ENABLE_MINT ? CONFIG.INITIAL_SUPPLY : 0} tokens`);
-        console.log(`   💸 Total Fee Dibayar: ${totalFee} SOL`);
-        console.log(`   ⏱️  Waktu Eksekusi: ${new Date().toISOString()}`);
-        
-        console.log('\n🔗 LINK-LINK PENTING UNTUK VERIFIKASI:');
-        console.log(`   • Lihat Token di Solscan: https://solscan.io/token/${mintPubkey.toBase58()}?cluster=mainnet-beta`);
-        console.log(`   • Lihat Metadata di Solscan: https://solscan.io/account/${metadataPDA.toBase58()}?cluster=mainnet-beta`);
-        if (associatedTokenAddress) {
-            console.log(`   • Lihat Saldo Token Anda: https://solscan.io/account/${associatedTokenAddress.toBase58()}?cluster=mainnet-beta`);
-        }
-        
-        console.log('\n⚠️  CATATAN PENTING SETELAH TOKEN DIBUAT:');
-        console.log('1. Metadata token Anda mungkin membutuhkan waktu beberapa menit untuk muncul dan terindeks sepenuhnya di Solscan atau explorer lainnya.');
-        console.log('2. Pastikan URL gambar yang Anda gunakan di `TOKEN_METADATA.image` valid dan dapat diakses secara publik (contoh: Imgur, IPFS, Arweave).');
-        console.log('3. Saat ini, "Update Authority" untuk metadata masih dipegang oleh wallet Anda. Anda bisa mengaturnya agar tidak bisa diubah (immutable) nanti jika diinginkan.');
-        console.log('4. SELALU SIMPAN PRIVATE KEY ANDA DENGAN SANGAT AMAN! Private key adalah satu-satunya akses ke dana dan token Anda.');
-        console.log('5. Untuk menambahkan liquidity ke token Anda (agar bisa diperdagangkan), Anda perlu menggunakan platform DEX seperti Raydium, Orca, atau Jupiter.');
-        
-        console.log('\n🔥 DARDCOR AI SYSTEM: MISSION COMPLETE 🔥\n');
-        
-    } catch (error) {
-        console.error('\n❌ ERROR KRITIS DALAM PROSES CREATE TOKEN SPL:');
-        console.error(`   Message: ${error.message}`);
-        console.error(`   Details: ${error.stack}`);
-        
-        if (error.message.includes('insufficient funds')) {
-            console.log('\n💡 SOLUSI: Wallet Anda tidak memiliki cukup SOL untuk menutupi biaya transaksi dan rent. Mohon top up wallet minting Anda dengan minimal 0.5 SOL dan coba lagi.');
-        } else if (error.message.includes('private key') || error.message.includes('invalid secret key')) {
-            console.log('\n💡 SOLUSI: Private key yang Anda berikan di file .env tidak valid atau formatnya salah. Pastikan private key Anda adalah base58 string yang benar atau JSON array angka yang valid.');
-        } else if (error.message.includes('Transaction simulation failed') || error.message.includes('blockhash not found')) {
-            console.log('\n💡 SOLUSI: Simulasi transaksi gagal atau blockhash tidak ditemukan. Ini bisa disebabkan oleh masalah jaringan Solana atau RPC. Coba lagi setelah beberapa saat.');
-        } else if (error.message.includes('ProgramIdNotSet')) {
-            console.log('\n💡 SOLUSI: Terjadi masalah dengan Program ID. Pastikan library @solana/spl-token dan @metaplex-foundation/mpl-token-metadata sudah terinstal dengan benar.');
-        }
-        process.exit(1); // Keluar dengan kode error
-    }
-}
 
-// ==============================================
-// 🎯 JALANKAN SEKARANG (Panggil fungsi utama)
-// ==============================================
-main();
+                // Sign and send the transaction
+                const signature = await sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [payerPublicKey, mintKeypair], // Payer signs, mint keypair signs for new account
+                    { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+                );
+
+                console.log('Token Mint Address:', mintKeypair.publicKey.toBase58());
+                console.log('Transaction Signature:', signature);
+
+                // Create an Associated Token Account for the payer
+                const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+                    connection,
+                    payerPublicKey, // Payer of the transaction
+                    mintKeypair.publicKey, // Mint address
+                    payerPublicKey, // Owner of the ATA
+                    true, // Allow owner to create ATA if not exists
+                    'confirmed',
+                    {},
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                );
+                console.log('Associated Token Account:', associatedTokenAccount.address.toBase58());
+
+                // Mint initial supply to the associated token account
+                const mintToInstruction = createMintToInstruction(
+                    mintKeypair.publicKey, // Mint
+                    associatedTokenAccount.address, // Destination (ATA of owner)
+                    mintAuthority, // Mint authority (payer)
+                    initialSupply * (10 ** tokenDecimals), // Amount with decimals
+                    [], // Signers
+                    TOKEN_PROGRAM_ID
+                );
+
+                const mintToTx = new Transaction().add(mintToInstruction);
+                const mintToSignature = await sendAndConfirmTransaction(
+                    connection,
+                    mintToTx,
+                    [payerPublicKey], // Payer (mint authority) signs
+                    { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+                );
+
+                console.log('Initial supply minted. Signature:', mintToSignature);
+
+                currentMint = mintKeypair.publicKey;
+                mintAddressDisplay.textContent = currentMint.toBase58();
+                mintAddressDisplay.href = `https://solana.fm/address/${currentMint.toBase58()}?cluster=${SOLANA_NETWORK}`;
+                totalSupplyDisplay.textContent = initialSupply.toLocaleString();
+                transactionLinkDisplay.textContent = signature.substring(0, 10) + '...';
+                transactionLinkDisplay.href = `https://solana.fm/tx/${signature}?cluster=${SOLANA_NETWORK}`;
+
+                showMessage(createTokenMessage, `Token ${tokenSymbol} berhasil dibuat! Mint Address: ${currentMint.toBase58()}`, 'success');
+                updateWalletUI(); // Enable management buttons
+            } catch (error) {
+                console.error('Gagal membuat token:', error);
+                showMessage(createTokenMessage, `Gagal membuat token: ${error.message || error}`, 'error');
+            } finally {
+                createTokenBtn.disabled = false;
+                createTokenBtnText.classList.remove('hidden');
+                createTokenSpinner.classList.add('hidden');
+            }
+        });
+
+        // Fungsi untuk mencetak lebih banyak token
+        mintMoreForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!payerPublicKey || !currentMint) {
+                showMessage(mintMoreMessage, 'Harap hubungkan wallet dan buat token terlebih dahulu.', 'error');
+                return;
+            }
+
+            mintMoreBtn.disabled = true;
+            mintMoreBtnText.classList.add('hidden');
+            mintMoreSpinner.classList.remove('hidden');
+            mintMoreMessage.classList.add('hidden');
+
+            const mintAmount = parseFloat(document.getElementById('mint-amount').value);
+
+            try {
+                const mintInfo = await connection.getAccountInfo(currentMint);
+                const mintData = Buffer.from(mintInfo.data);
+                const decimals = mintData[44]; // Decimals is at byte 44 in Mint account data
+
+                const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+                    connection,
+                    payerPublicKey,
+                    currentMint,
+                    payerPublicKey,
+                    true,
+                    'confirmed',
+                    {},
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                );
+
+                const mintToInstruction = createMintToInstruction(
+                    currentMint,
+                    associatedTokenAccount.address,
+                    payerPublicKey, // Mint authority (payer)
+                    mintAmount * (10 ** decimals),
+                    [],
+                    TOKEN_PROGRAM_ID
+                );
+
+                const transaction = new Transaction().add(mintToInstruction);
+                const signature = await sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [payerPublicKey],
+                    { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+                );
+
+                console.log('Minted more tokens. Signature:', signature);
+                showMessage(mintMoreMessage, `${mintAmount} token berhasil dicetak!`, 'success');
+                transactionLinkDisplay.textContent = signature.substring(0, 10) + '...';
+                transactionLinkDisplay.href = `https://solana.fm/tx/${signature}?cluster=${SOLANA_NETWORK}`;
+
+                // Update total supply display (requires fetching current supply)
+                const tokenAccountInfo = await connection.getTokenAccountBalance(associatedTokenAccount.address);
+                totalSupplyDisplay.textContent = parseFloat(tokenAccountInfo.value.uiAmountString).toLocaleString();
+
+            } catch (error) {
+                console.error('Gagal mencetak token:', error);
+                showMessage(mintMoreMessage, `Gagal mencetak token: ${error.message || error}`, 'error');
+            } finally {
+                mintMoreBtn.disabled = false;
+                mintMoreBtnText.classList.remove('hidden');
+                mintMoreSpinner.classList.add('hidden');
+            }
+        });
+
+        // Fungsi untuk transfer token
+        transferForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!payerPublicKey || !currentMint) {
+                showMessage(transferMessage, 'Harap hubungkan wallet dan buat token terlebih dahulu.', 'error');
+                return;
+            }
+
+            transferBtn.disabled = true;
+            transferMessage.classList.add('hidden');
+
+            const recipientAddress = document.getElementById('transfer-recipient').value;
+            const transferAmount = parseFloat(document.getElementById('transfer-amount').value);
+
+            try {
+                const recipientPublicKey = new PublicKey(recipientAddress);
+                const mintInfo = await connection.getAccountInfo(currentMint);
+                const mintData = Buffer.from(mintInfo.data);
+                const decimals = mintData[44];
+
+                const fromAssociatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+                    connection,
+                    payerPublicKey,
+                    currentMint,
+                    payerPublicKey,
+                    true,
+                    'confirmed',
+                    {},
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                );
+
+                const toAssociatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+                    connection,
+                    payerPublicKey, // Payer for creating ATA if not exists
+                    currentMint,
+                    recipientPublicKey,
+                    true,
+                    'confirmed',
+                    {},
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                );
+
+                const transferInstruction = createTransferInstruction(
+                    fromAssociatedTokenAccount.address,
+                    toAssociatedTokenAccount.address,
+                    payerPublicKey, // Owner of the source ATA
+                    transferAmount * (10 ** decimals),
+                    [],
+                    TOKEN_PROGRAM_ID
+                );
+
+                const transaction = new Transaction().add(transferInstruction);
+                const signature = await sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [payerPublicKey],
+                    { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+                );
+
+                console.log('Token transferred. Signature:', signature);
+                showMessage(transferMessage, `${transferAmount} token berhasil ditransfer ke ${recipientAddress}!`, 'success');
+                transactionLinkDisplay.textContent = signature.substring(0, 10) + '...';
+                transactionLinkDisplay.href = `https://solana.fm/tx/${signature}?cluster=${SOLANA_NETWORK}`;
+
+                // Update total supply display (requires fetching current supply)
+                const tokenAccountInfo = await connection.getTokenAccountBalance(fromAssociatedTokenAccount.address);
+                totalSupplyDisplay.textContent = parseFloat(tokenAccountInfo.value.uiAmountString).toLocaleString();
+
+            } catch (error) {
+                console.error('Gagal transfer token:', error);
+                showMessage(transferMessage, `Gagal transfer token: ${error.message || error}`, 'error');
+            } finally {
+                transferBtn.disabled = false;
+            }
+        });
+
+        // Fungsi untuk membakar token
+        burnForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!payerPublicKey || !currentMint) {
+                showMessage(burnMessage, 'Harap hubungkan wallet dan buat token terlebih dahulu.', 'error');
+                return;
+            }
+
+            burnBtn.disabled = true;
+            burnMessage.classList.add('hidden');
+
+            const burnAmount = parseFloat(document.getElementById('burn-amount').value);
+
+            try {
+                const mintInfo = await connection.getAccountInfo(currentMint);
+                const mintData = Buffer.from(mintInfo.data);
+                const decimals = mintData[44];
+
+                const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+                    connection,
+                    payerPublicKey,
+                    currentMint,
+                    payerPublicKey,
+                    false, // Do not create if not exists, user must have token
+                    'confirmed',
+                    {},
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                );
+
+                const burnInstruction = createBurnInstruction(
+                    associatedTokenAccount.address,
+                    currentMint,
+                    payerPublicKey, // Owner of the ATA
+                    burnAmount * (10 ** decimals),
+                    [],
+                    TOKEN_PROGRAM_ID
+                );
+
+                const transaction = new Transaction().add(burnInstruction);
+                const signature = await sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [payerPublicKey],
+                    { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+                );
+
+                console.log('Token burned. Signature:', signature);
+                showMessage(burnMessage, `${burnAmount} token berhasil dibakar!`, 'success');
+                transactionLinkDisplay.textContent = signature.substring(0, 10) + '...';
+                transactionLinkDisplay.href = `https://solana.fm/tx/${signature}?cluster=${SOLANA_NETWORK}`;
+
+                // Update total supply display (requires fetching current supply)
+                const tokenAccountInfo = await connection.getTokenAccountBalance(associatedTokenAccount.address);
+                totalSupplyDisplay.textContent = parseFloat(tokenAccountInfo.value.uiAmountString).toLocaleString();
+
+            } catch (error) {
+                console.error('Gagal membakar token:', error);
+                showMessage(burnMessage, `Gagal membakar token: ${error.message || error}`, 'error');
+            } finally {
+                burnBtn.disabled = false;
+            }
+        });
+
+        // Event Listeners
+        connectWalletBtn.addEventListener('click', connectWallet);
+        disconnectWalletBtn.addEventListener('click', disconnectWallet);
+
+        // Inisialisasi UI saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            updateWalletUI();
+        });
+
+        // Pantau perubahan wallet (jika ada)
+        if (window.solana) {
+            window.solana.on('connect', (publicKey) => {
+                payerPublicKey = new PublicKey(publicKey.toString());
+                updateWalletUI();
+                console.log('Wallet terhubung otomatis:', payerPublicKey.toBase58());
+            });
+            window.solana.on('disconnect', () => {
+                payerPublicKey = null;
+                currentMint = null;
+                updateWalletUI();
+                console.log('Wallet terputus otomatis.');
+            });
+        }
+    </script>
+</body>
+</html>
