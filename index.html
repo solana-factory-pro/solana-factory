@@ -1,263 +1,456 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Solana Token Creator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dardcor AI - Pembuat Token SPL Solana</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN (untuk ikon) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0pReXgC5Kj2YSPtX7W3T+x12yYw+2/fP2L5/A0L7M/x2e3A7qC0G0u/A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Solana Web3.js -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <!-- Solana SPL Token -->
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
+    <!-- Buffer (diperlukan oleh beberapa library Solana di browser) -->
+    <script>
+        // Polyfill Buffer untuk browser
+        (function (global) {
+            if (typeof Buffer === 'undefined') {
+                global.Buffer = require('buffer').Buffer;
+            }
+        })(typeof self !== 'undefined' ? self : this);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
 
-<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-<script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
-
-<style>
-
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
-
-.box{
-background:#0f172a;
-padding:30px;
-border-radius:10px;
-width:380px;
-}
-
-input{
-width:100%;
-padding:10px;
-margin-top:10px;
-border:none;
-border-radius:6px;
-}
-
-button{
-width:100%;
-padding:12px;
-margin-top:15px;
-border:none;
-border-radius:6px;
-background:#22c55e;
-color:white;
-font-weight:bold;
-cursor:pointer;
-}
-
-#result{
-margin-top:20px;
-word-break:break-all;
-}
-
-</style>
-
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e; /* Dark background */
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #16213e; /* Slightly lighter dark */
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            border: 1px solid #0f3460;
+        }
+        input[type="text"], input[type="number"], textarea, input[type="file"] {
+            background-color: #0f3460;
+            border: 1px solid #1a1a2e;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+            border-color: #e94560;
+            outline: none;
+        }
+        button {
+            background-color: #e94560;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover:not(:disabled) {
+            background-color: #b82b42;
+        }
+        button:disabled {
+            background-color: #6c2331;
+            cursor: not-allowed;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            width: auto;
+            accent-color: #e94560;
+        }
+        .social-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .social-input-group button {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the tooltip container */
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
-
 <body>
-
-<div class="box">
-
-<h2>Solana Token Creator</h2>
-
-<button onclick="connectWallet()">Connect Phantom</button>
-
-<input id="name" placeholder="Token Name">
-<input id="symbol" placeholder="Symbol">
-<input id="decimals" value="9">
-<input id="supply" value="1000000000">
-
-<button onclick="createToken()">Create Token</button>
-
-<div id="result"></div>
-
-</div>
-
-<script>
-
-const connection =
-new solanaWeb3.Connection(
-"https://api.mainnet-beta.solana.com"
-);
-
-let wallet;
-
-async function connectWallet(){
-
-if(!window.solana){
-
-alert("Install Phantom Wallet");
-
-return;
-
-}
-
-const resp = await window.solana.connect();
-
-wallet = resp.publicKey;
-
-alert("Connected: " + wallet.toString());
-
-}
-
-async function createToken(){
-
-try{
-
-const mint =
-solanaWeb3.Keypair.generate();
-
-const decimals =
-parseInt(document.getElementById("decimals").value);
-
-const supply =
-parseInt(document.getElementById("supply").value);
-
-const lamports =
-await connection.getMinimumBalanceForRentExemption(
-splToken.MintLayout.span
-);
-
-const tx =
-new solanaWeb3.Transaction();
-
-tx.add(
-
-solanaWeb3.SystemProgram.createAccount({
-
-fromPubkey: wallet,
-newAccountPubkey: mint.publicKey,
-space: splToken.MintLayout.span,
-lamports: lamports,
-programId: splToken.TOKEN_PROGRAM_ID
-
-})
-
-);
-
-tx.add(
-
-splToken.createInitializeMintInstruction(
-
-mint.publicKey,
-decimals,
-wallet,
-wallet
-
-)
-
-);
-
-const ata =
-await splToken.getAssociatedTokenAddress(
-
-mint.publicKey,
-wallet
-
-);
-
-tx.add(
-
-splToken.createAssociatedTokenAccountInstruction(
-
-wallet,
-ata,
-wallet,
-mint.publicKey
-
-)
-
-);
-
-const amount =
-supply * Math.pow(10,decimals);
-
-tx.add(
-
-splToken.createMintToInstruction(
-
-mint.publicKey,
-ata,
-wallet,
-amount
-
-)
-
-);
-
-tx.add(
-
-splToken.createSetAuthorityInstruction(
-
-mint.publicKey,
-wallet,
-splToken.AuthorityType.MintTokens,
-null
-
-)
-
-);
-
-tx.add(
-
-splToken.createSetAuthorityInstruction(
-
-mint.publicKey,
-wallet,
-splToken.AuthorityType.FreezeAccount,
-null
-
-)
-
-);
-
-tx.feePayer = wallet;
-
-tx.recentBlockhash =
-(await connection.getLatestBlockhash()).blockhash;
-
-tx.partialSign(mint);
-
-const signed =
-await window.solana.signTransaction(tx);
-
-const sig =
-await connection.sendRawTransaction(
-signed.serialize()
-);
-
-await connection.confirmTransaction(sig);
-
-document.getElementById("result").innerHTML =
-
-"✅ Token Created <br><br>" +
-
-"Mint Address:<br>" +
-
-mint.publicKey.toString() +
-
-"<br><br>" +
-
-"<a target='_blank' href='https://solscan.io/token/" +
-
-mint.publicKey.toString() +
-
-"'>View Token</a>";
-
-}
-
-catch(err){
-
-console.error(err);
-
-alert("Transaction Failed");
-
-}
-
-}
-
-</script>
-
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center mb-8 text-white">Buat Token SPL Solana</h1>
+
+        <div class="mb-6 text-center">
+            <button id="connectWalletBtn" class="bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-wallet mr-2"></i> Hubungkan Wallet
+            </button>
+            <p id="walletAddress" class="mt-4 text-lg text-green-400"></p>
+        </div>
+
+        <form id="tokenForm" class="space-y-6">
+            <div>
+                <label for="logo" class="block text-sm font-medium mb-2">Logo Token (PNG, JPG, maks 1MB):</label>
+                <input type="file" id="logo" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-pink-50 file:text-pink-700
+                    hover:file:bg-pink-100" />
+                <p id="logoPreview" class="mt-2 text-sm text-gray-400"></p>
+            </div>
+
+            <div>
+                <label for="name" class="block text-sm font-medium mb-2">Nama Token:</label>
+                <input type="text" id="name" placeholder="Contoh: Dardcor Coin" required />
+            </div>
+
+            <div>
+                <label for="symbol" class="block text-sm font-medium mb-2">Ticker Token (Symbol):</label>
+                <input type="text" id="symbol" placeholder="Contoh: DDC" required maxlength="10" />
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium mb-2">Deskripsi Token:</label>
+                <textarea id="description" rows="3" placeholder="Deskripsi singkat tentang token Anda..." required></textarea>
+            </div>
+
+            <div>
+                <label for="decimals" class="block text-sm font-medium mb-2">Desimal Token (umumnya 9):</label>
+                <input type="number" id="decimals" value="9" min="0" max="9" required />
+            </div>
+
+            <div>
+                <label for="initialSupply" class="block text-sm font-medium mb-2">Pasokan Awal (akan dicetak ke wallet Anda):</label>
+                <input type="number" id="initialSupply" value="0" min="0" step="any" required />
+            </div>
+
+            <div id="socialsContainer">
+                <label class="block text-sm font-medium mb-2">Media Sosial (Opsional):</label>
+                <div class="social-input-group">
+                    <input type="text" class="social-link-input" placeholder="Link Twitter" data-name="twitter" />
+                    <button type="button" class="bg-red-500 hover:bg-red-600 remove-social-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <button type="button" id="addSocialBtn" class="bg-green-600 hover:bg-green-700 mt-2">
+                    <i class="fas fa-plus mr-2"></i> Tambah Link Sosial
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="mintAuthority" checked />
+                    <label for="mintAuthority" class="text-sm">Pertahankan Otoritas Mint
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle text-gray-400 ml-1"></i>
+                            <span class="tooltiptext">Jika dicentang, Anda dapat mencetak token baru. Jika tidak, kemampuan mint akan dicabut selamanya.</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="freezeAuthority" checked />
+                    <label for="freezeAuthority" class="text-sm">Pertahankan Otoritas Freeze
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle text-gray-400 ml-1"></i>
+                            <span class="tooltiptext">Jika dicentang, Anda dapat membekukan token di akun tertentu. Jika tidak, kemampuan freeze akan dicabut selamanya.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <p class="text-lg text-center mt-8">Biaya Layanan: <span class="font-bold text-yellow-400">0.20 SOL</span></p>
+
+            <button type="submit" id="createTokenBtn" class="w-full mt-6" disabled>
+                Buat Token & Bayar
+            </button>
+        </form>
+
+        <div id="result" class="mt-8 p-6 bg-gray-800 rounded-lg hidden">
+            <h2 class="text-2xl font-bold mb-4 text-green-400">Token Berhasil Dibuat!</h2>
+            <p class="mb-2">Alamat Kontrak Token (CA): <span id="tokenCa" class="font-mono text-blue-400 break-all"></span></p>
+            <p class="mb-2">Tanda Tangan Transaksi: <span id="transactionSignature" class="font-mono text-blue-400 break-all"></span></p>
+            <p class="mb-2">Link Metadata: <a id="metadataLink" target="_blank" class="text-purple-400 hover:underline break-all"></a></p>
+            <p class="mb-2">Lihat di Solana Explorer: <a id="explorerLink" target="_blank" class="text-purple-400 hover:underline break-all"></a></p>
+        </div>
+
+        <div id="error" class="mt-8 p-6 bg-red-800 rounded-lg hidden">
+            <h2 class="text-2xl font-bold mb-4 text-white">Terjadi Kesalahan!</h2>
+            <p id="errorMessage" class="text-red-200"></p>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:3001'; // Sesuaikan dengan port backend Anda
+        let wallet = null;
+        let provider = null;
+        let walletPublicKey = null;
+
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const walletAddressElem = document.getElementById('walletAddress');
+        const tokenForm = document.getElementById('tokenForm');
+        const createTokenBtn = document.getElementById('createTokenBtn');
+        const logoInput = document.getElementById('logo');
+        const logoPreview = document.getElementById('logoPreview');
+        const socialsContainer = document.getElementById('socialsContainer');
+        const addSocialBtn = document.getElementById('addSocialBtn');
+        const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
+        const errorMessageElem = document.getElementById('errorMessage');
+
+        // Fungsi utilitas untuk menampilkan pesan
+        function showMessage(type, message) {
+            resultDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            if (type === 'success') {
+                resultDiv.classList.remove('hidden');
+                document.getElementById('tokenCa').textContent = message.tokenCa;
+                document.getElementById('transactionSignature').textContent = message.signature;
+                document.getElementById('metadataLink').textContent = message.metadataLink;
+                document.getElementById('metadataLink').href = message.metadataLink;
+                document.getElementById('explorerLink').href = `https://solscan.io/token/${message.tokenCa}?cluster=devnet`; // Ganti devnet ke mainnet-beta jika sudah siap
+                document.getElementById('explorerLink').textContent = `https://solscan.io/token/${message.tokenCa}?cluster=devnet`;
+            } else {
+                errorDiv.classList.remove('hidden');
+                errorMessageElem.textContent = message;
+            }
+        }
+
+        // --- Wallet Connection Logic ---
+        async function connectWallet() {
+            if ("solana" in window) {
+                provider = window.solana;
+                if (provider.isPhantom) {
+                    try {
+                        const resp = await provider.connect();
+                        walletPublicKey = new SolanaWeb3.PublicKey(resp.publicKey.toString());
+                        walletAddressElem.textContent = `Terhubung: ${walletPublicKey.toBase58().substring(0, 6)}...${walletPublicKey.toBase58().slice(-6)}`;
+                        createTokenBtn.disabled = false;
+                        connectWalletBtn.textContent = 'Wallet Terhubung';
+                        connectWalletBtn.disabled = true;
+                        console.log("Wallet terhubung:", walletPublicKey.toBase58());
+                    } catch (err) {
+                        console.error("Gagal menghubungkan Phantom Wallet:", err);
+                        showMessage('error', 'Gagal menghubungkan Phantom Wallet. Pastikan aplikasi Phantom terbuka dan Anda mengizinkan koneksi.');
+                    }
+                }
+            } else {
+                showMessage('error', 'Wallet Phantom tidak ditemukan. Silakan instal Phantom Wallet.');
+                window.open("https://phantom.app/", "_blank");
+            }
+        }
+
+        connectWalletBtn.addEventListener('click', connectWallet);
+
+        // --- Social Media Input Logic ---
+        function addSocialInputField(initialValue = '', name = '') {
+            const div = document.createElement('div');
+            div.className = 'social-input-group';
+            div.innerHTML = `
+                <input type="text" class="social-link-input" placeholder="Link Media Sosial" value="${initialValue}" data-name="${name}" />
+                <button type="button" class="bg-red-500 hover:bg-red-600 remove-social-btn"><i class="fas fa-times"></i></button>
+            `;
+            socialsContainer.insertBefore(div, addSocialBtn);
+
+            div.querySelector('.remove-social-btn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Hapus input sosial default jika ada
+        socialsContainer.querySelectorAll('.social-input-group').forEach(group => {
+            group.querySelector('.remove-social-btn').addEventListener('click', () => {
+                group.remove();
+            });
+        });
+
+        addSocialBtn.addEventListener('click', () => addSocialInputField());
+
+        // --- Logo Preview Logic ---
+        logoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 1024 * 1024) { // Max 1MB
+                    logoPreview.innerHTML = '<span class="text-red-400">Ukuran file melebihi 1MB.</span>';
+                    logoInput.value = ''; // Reset input file
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoPreview.innerHTML = `<img src="${e.target.result}" alt="Logo Preview" class="w-24 h-24 object-contain rounded-lg mt-2" />`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                logoPreview.innerHTML = '';
+            }
+        });
+
+        // --- Form Submission Logic ---
+        tokenForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!walletPublicKey) {
+                showMessage('error', 'Silakan hubungkan wallet Anda terlebih dahulu.');
+                return;
+            }
+
+            createTokenBtn.disabled = true;
+            createTokenBtn.textContent = 'Memproses...';
+            showMessage('info', 'Sedang membuat token, harap tunggu...');
+
+            try {
+                const name = document.getElementById('name').value;
+                const symbol = document.getElementById('symbol').value;
+                const description = document.getElementById('description').value;
+                const decimals = parseInt(document.getElementById('decimals').value);
+                const initialSupply = parseFloat(document.getElementById('initialSupply').value);
+                const mintAuthorityEnabled = document.getElementById('mintAuthority').checked;
+                const freezeAuthorityEnabled = document.getElementById('freezeAuthority').checked;
+                const logoFile = logoInput.files[0];
+
+                const socials = {};
+                document.querySelectorAll('.social-link-input').forEach(input => {
+                    const link = input.value.trim();
+                    const name = input.dataset.name || input.placeholder.toLowerCase().replace('link ', '');
+                    if (link) {
+                        socials[name] = link;
+                    }
+                });
+
+                let logoIpfsUrl = '';
+
+                // 1. Unggah logo ke Pinata
+                if (logoFile) {
+                    const formData = new FormData();
+                    formData.append('logo', logoFile);
+
+                    const uploadRes = await fetch(`${BACKEND_URL}/upload-image`, {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (!uploadRes.ok) {
+                        const errorData = await uploadRes.json();
+                        throw new Error(`Gagal mengunggah logo: ${errorData.details || uploadRes.statusText}`);
+                    }
+                    const uploadData = await uploadRes.json();
+                    logoIpfsUrl = uploadData.imageUrl;
+                } else {
+                    showMessage('error', 'Logo token wajib diunggah.');
+                    createTokenBtn.disabled = false;
+                    createTokenBtn.textContent = 'Buat Token & Bayar';
+                    return;
+                }
+
+                // 2. Kirim detail token ke backend untuk membuat transaksi
+                const createTxRes = await fetch(`${BACKEND_URL}/create-token-transaction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payerPublicKey: walletPublicKey.toBase58(),
+                        name,
+                        symbol,
+                        description,
+                        decimals,
+                        logoIpfsUrl,
+                        socials,
+                        mintAuthorityEnabled,
+                        freezeAuthorityEnabled,
+                        initialSupply,
+                    }),
+                });
+
+                if (!createTxRes.ok) {
+                    const errorData = await createTxRes.json();
+                    throw new Error(`Gagal menyiapkan transaksi: ${errorData.details || createTxRes.statusText}`);
+                }
+                const createTxData = await createTxRes.json();
+                const transaction = SolanaWeb3.Transaction.from(Buffer.from(createTxData.transaction, 'base64'));
+
+                // 3. Minta user menandatangani transaksi
+                const signedTransaction = await provider.signTransaction(transaction);
+
+                // 4. Kirim transaksi yang sudah ditandatangani ke backend untuk broadcast
+                const sendTxRes = await fetch(`${BACKEND_URL}/send-signed-transaction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        signedTransaction: signedTransaction.serialize().toString('base64'),
+                    }),
+                });
+
+                if (!sendTxRes.ok) {
+                    const errorData = await sendTxRes.json();
+                    throw new Error(`Gagal mengirim transaksi: ${errorData.details || sendTxRes.statusText}`);
+                }
+                const sendTxData = await sendTxRes.json();
+
+                showMessage('success', {
+                    tokenCa: createTxData.mintAddress,
+                    signature: sendTxData.signature,
+                    metadataLink: createTxData.metadataUri
+                });
+
+            } catch (error) {
+                console.error('Terjadi kesalahan:', error);
+                showMessage('error', `Terjadi kesalahan saat membuat token: ${error.message}`);
+            } finally {
+                createTokenBtn.disabled = false;
+                createTokenBtn.textContent = 'Buat Token & Bayar';
+            }
+        });
+    </script>
 </body>
 </html>
